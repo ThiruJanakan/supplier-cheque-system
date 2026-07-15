@@ -349,7 +349,22 @@ input:focus, select:focus, textarea:focus { border-color: var(--banker); outline
 .cal .due.pending { background: var(--amber-soft); color: var(--amber); }
 .cal .due.cleared { background: var(--banker-soft); color: var(--banker); }
 .cal .due.bounced { background: var(--claret-soft); color: var(--claret); }
-@media (max-width: 700px) { .cal .day { min-height: 52px; } }
+@media (max-width: 700px) {
+  .cal { gap: 4px; }
+  .cal .dow { font-size: 9px; padding: 2px 0 6px; }
+  .cal .day { min-height: 40px; padding: 4px 2px; text-align: center; }
+  .cal .day .d { display: block; font-size: 11px; margin-bottom: 3px; }
+  .cal .due {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin: 1px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 0;
+    line-height: 0;
+  }
+}
 
 /* ---- login ---- */
 .login-wrap {
@@ -522,35 +537,60 @@ input:focus, select:focus, textarea:focus { border-color: var(--banker); outline
     gap: 12px;
   }
   .due-item-card {
-    background: var(--surface);
+    background: var(--paper);
     border: 1px solid var(--rule);
+    border-left: 3px solid var(--rule);
     border-radius: 8px;
-    padding: 12px 14px;
+    padding: 14px 16px;
     box-shadow: var(--shadow);
   }
+  .due-item-card.status-pending, .due-item-card.status-partially_paid { border-left-color: var(--amber); }
+  .due-item-card.status-cleared { border-left-color: var(--banker); }
+  .due-item-card.status-bounced { border-left-color: var(--claret); }
+  .due-item-card.status-issued { border-left-color: #0369a1; }
   .due-item-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px dashed var(--rule);
-    padding-bottom: 8px;
-    margin-bottom: 8px;
-    font-size: 12.5px;
+    margin-bottom: 12px;
   }
-  .due-item-body {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    font-size: 13.5px;
-  }
-  .due-item-body > div {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  .due-item-date {
+    font-family: var(--font-mono), 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    font-size: 13px;
     color: var(--ink);
   }
-  .due-item-body strong {
-    font-weight: 600;
+  .due-label {
+    display: block;
+    color: var(--muted);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-family: var(--font-mono), 'IBM Plex Mono', monospace;
+    margin-bottom: 4px;
+  }
+  .due-item-supplier {
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .due-item-supplier strong {
+    font-size: 14.5px;
+    color: var(--ink);
+  }
+  .due-item-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 12px;
+  }
+  .due-item-amount {
+    text-align: right;
+  }
+  .due-item-amount .mono {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--ink);
   }
 }
 

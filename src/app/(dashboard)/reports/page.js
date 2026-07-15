@@ -393,23 +393,25 @@ export default function Reports() {
             ) : (
               <div className="due-items-list">
                 {calendar.map(c => (
-                  <div key={c.id} className="due-item-card">
+                  <div key={c.id} className={`due-item-card status-${c.status}`}>
                     <div className="due-item-header">
-                      <span className="mono" style={{ fontWeight: 600 }}>Due: {c.due_date}</span>
+                      <span className="due-item-date">Due {c.due_date}</span>
                       <Stamp status={c.status} />
                     </div>
                     <div className="due-item-body">
-                      <div>
-                        <span style={{ color: 'var(--muted)', fontSize: '11px', textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>Cheque</span>
-                        <ChequeNo>{c.cheque_number}</ChequeNo>
-                      </div>
-                      <div>
-                        <span style={{ color: 'var(--muted)', fontSize: '11px', textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>Supplier</span>
+                      <div className="due-item-supplier">
+                        <span className="due-label">Supplier</span>
                         <strong>{c.supplier_name}</strong>
                       </div>
-                      <div style={{ marginTop: 4, borderTop: '1px solid var(--paper)', paddingTop: 6 }}>
-                        <span style={{ color: 'var(--muted)', fontSize: '11px', textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>Amount</span>
-                        <span style={{ fontWeight: 700 }}><Money value={c.amount} /></span>
+                      <div className="due-item-meta">
+                        <div>
+                          <span className="due-label">Cheque</span>
+                          <ChequeNo>{c.cheque_number}</ChequeNo>
+                        </div>
+                        <div className="due-item-amount">
+                          <span className="due-label">Amount</span>
+                          <Money value={c.amount} />
+                        </div>
                       </div>
                     </div>
                   </div>
