@@ -77,7 +77,9 @@ function DashboardLayoutContent({ children }) {
           </div>
         </aside>
         <main className="main">
-          {children}
+          <div className="route-view" key={pathname}>
+            {children}
+          </div>
         </main>
       </div>
     </>

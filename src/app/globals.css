@@ -409,11 +409,27 @@ input:focus, select:focus, textarea:focus { border-color: var(--banker); outline
   min-height: 100vh;
   display: grid;
   place-items: center;
+  position: relative;
+  overflow: hidden;
+  background: var(--ink);
+  padding: 16px;
+}
+/* Slow "Ken Burns" zoom on the backdrop, behind the card. */
+.login-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
   background:
     linear-gradient(rgba(33,50,60,0.82), rgba(33,50,60,0.88)),
     url('/pharmacy_login_bg.png') no-repeat center center/cover;
+  animation: kenBurns 26s ease-in-out infinite alternate;
+  z-index: 0;
 }
-.login-card { width: 100%; max-width: 380px; background: var(--surface); border-radius: 8px; padding: 30px 28px; box-shadow: 0 24px 80px rgba(0,0,0,0.4); }
+@keyframes kenBurns {
+  from { transform: scale(1); }
+  to   { transform: scale(1.14); }
+}
+.login-card { position: relative; z-index: 1; width: 100%; max-width: 380px; background: var(--surface); border-radius: 8px; padding: 30px 28px; box-shadow: 0 24px 80px rgba(0,0,0,0.4); }
 .login-card h1 { font-size: 21px; }
 .login-card .tag { font-family: var(--font-mono), 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin: 6px 0 22px; }
 
@@ -668,17 +684,35 @@ input:focus, select:focus, textarea:focus { border-color: var(--banker); outline
   100% { background-position: 400px 0; }
 }
 
-/* --- page-level staggered entrance --- */
-/* Each top-level block of a page reveals in sequence. */
-.main > * {
+/* --- route transition + page-level staggered entrance --- */
+/* .route-view is keyed on the pathname, so it remounts on every
+   navigation and replays this staggered reveal — that IS the page
+   transition. Each top-level block of the page reveals in sequence. */
+.route-view > * {
   animation: fadeInUp 0.45s cubic-bezier(0.22, 0.8, 0.28, 1) both;
 }
-.main > *:nth-child(1) { animation-delay: 0.00s; }
-.main > *:nth-child(2) { animation-delay: 0.06s; }
-.main > *:nth-child(3) { animation-delay: 0.12s; }
-.main > *:nth-child(4) { animation-delay: 0.18s; }
-.main > *:nth-child(5) { animation-delay: 0.24s; }
-.main > *:nth-child(6) { animation-delay: 0.30s; }
+.route-view > *:nth-child(1) { animation-delay: 0.00s; }
+.route-view > *:nth-child(2) { animation-delay: 0.06s; }
+.route-view > *:nth-child(3) { animation-delay: 0.12s; }
+.route-view > *:nth-child(4) { animation-delay: 0.18s; }
+.route-view > *:nth-child(5) { animation-delay: 0.24s; }
+.route-view > *:nth-child(6) { animation-delay: 0.30s; }
+.route-view > *:nth-child(7) { animation-delay: 0.36s; }
+.route-view > *:nth-child(8) { animation-delay: 0.42s; }
+
+/* --- table rows populate in with a soft stagger --- */
+/* Opacity-only (no transform) so it never fights the card's entrance. */
+tbody tr { animation: fadeIn 0.4s ease both; }
+tbody tr:nth-child(1)  { animation-delay: 0.04s; }
+tbody tr:nth-child(2)  { animation-delay: 0.08s; }
+tbody tr:nth-child(3)  { animation-delay: 0.12s; }
+tbody tr:nth-child(4)  { animation-delay: 0.16s; }
+tbody tr:nth-child(5)  { animation-delay: 0.20s; }
+tbody tr:nth-child(6)  { animation-delay: 0.24s; }
+tbody tr:nth-child(7)  { animation-delay: 0.28s; }
+tbody tr:nth-child(8)  { animation-delay: 0.32s; }
+tbody tr:nth-child(9)  { animation-delay: 0.36s; }
+tbody tr:nth-child(10) { animation-delay: 0.40s; }
 
 /* --- cards: gentle shadow lift on hover --- */
 .card {
