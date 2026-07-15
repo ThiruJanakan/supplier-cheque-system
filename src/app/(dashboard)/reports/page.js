@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { api } from '@/api/client';
-import { Money, Stamp, ChequeNo } from '@/components/ui';
+import { Money, Stamp, ChequeNo, Loader } from '@/components/ui';
 import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from 'recharts';
@@ -72,7 +72,7 @@ export default function Reports() {
   }, [month]);
 
   if (error) return <div className="alert-error">{error}</div>;
-  if (!summary) return <div className="empty">Loading…</div>;
+  if (!summary) return <Loader text="Loading reports" />;
   const cs = summary.chequeStats;
 
   const handleExportPdf = () => {

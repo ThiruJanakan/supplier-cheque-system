@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth, AuthProvider } from '@/context/AuthContext';
+import { Loader } from '@/components/ui';
 
 const nav = [
   { section: 'Operations', links: [
@@ -29,7 +30,7 @@ function DashboardLayoutContent({ children }) {
   }, [isAuthed, loading, router]);
 
   if (loading || !isAuthed) {
-    return <div className="empty" style={{ marginTop: '20vh' }}>Loading session…</div>;
+    return <div style={{ marginTop: '20vh' }}><Loader text="Loading session" /></div>;
   }
 
   return (

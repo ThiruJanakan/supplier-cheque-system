@@ -637,5 +637,156 @@ input:focus, select:focus, textarea:focus { border-color: var(--banker); outline
   display: none;
 }
 
+/* ============================================================
+   Motion & micro-interactions layer
+   All animation is globally disabled under
+   prefers-reduced-motion (see top of file), so this is
+   safe for motion-sensitive users.
+   ============================================================ */
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes growBarX {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+/* --- page-level staggered entrance --- */
+/* Each top-level block of a page reveals in sequence. */
+.main > * {
+  animation: fadeInUp 0.45s cubic-bezier(0.22, 0.8, 0.28, 1) both;
+}
+.main > *:nth-child(1) { animation-delay: 0.00s; }
+.main > *:nth-child(2) { animation-delay: 0.06s; }
+.main > *:nth-child(3) { animation-delay: 0.12s; }
+.main > *:nth-child(4) { animation-delay: 0.18s; }
+.main > *:nth-child(5) { animation-delay: 0.24s; }
+.main > *:nth-child(6) { animation-delay: 0.30s; }
+
+/* --- cards: gentle shadow lift on hover --- */
+.card {
+  transition: box-shadow 0.22s ease, transform 0.22s ease, border-color 0.22s ease;
+}
+.card:hover {
+  box-shadow: 0 8px 26px rgba(33, 50, 60, 0.10);
+  border-color: #cbd3d1;
+}
+/* Compact metric cards get a real lift; content cards stay put. */
+.stat, .kpi-card {
+  transition: box-shadow 0.22s ease, transform 0.22s ease, border-color 0.22s ease;
+}
+.stat:hover, .kpi-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(33, 50, 60, 0.12);
+}
+.stat-block {
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+.kpi-card:hover .stat-block {
+  background: var(--banker-soft);
+}
+
+/* --- buttons: press feedback + hover lift --- */
+.btn {
+  transition: transform 0.12s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn.primary:hover { box-shadow: 0 6px 18px rgba(31, 111, 84, 0.28); }
+.btn.ghost:hover  { box-shadow: 0 4px 14px rgba(33, 50, 60, 0.08); }
+.btn.danger:hover { box-shadow: 0 4px 14px rgba(166, 61, 61, 0.18); }
+.btn:disabled { transform: none !important; box-shadow: none !important; }
+
+/* --- sidebar nav: slide + smooth active --- */
+.nav a {
+  transition: background 0.16s ease, color 0.16s ease, padding-left 0.16s ease;
+}
+.nav a:hover { padding-left: 15px; }
+.nav a.active {
+  box-shadow: inset 3px 0 0 rgba(255, 255, 255, 0.55);
+}
+
+/* --- inputs: smooth focus --- */
+input, select, textarea {
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+/* --- tables: smooth row hover --- */
+tbody tr { transition: background 0.16s ease; }
+.responsive-table tr { transition: box-shadow 0.2s ease, transform 0.2s ease; }
+
+/* --- status pills & cheque numbers --- */
+.stamp { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.stamp:hover { transform: translateY(-1px); }
+.chq-no { transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease; }
+.chq-no:hover { border-color: var(--banker); background: var(--banker-soft); }
+
+/* --- dashboard supplier-spend bars grow on load --- */
+.supplier-spend-bar {
+  transform-origin: left center;
+  animation: growBarX 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* --- calendar due-dots: pop on hover/focus --- */
+.due-dot { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.due-dot:hover, .due-dot:focus-visible {
+  transform: scale(1.45);
+  box-shadow: 0 0 0 3px rgba(31, 111, 84, 0.15);
+}
+.due-tooltip { animation: popIn 0.16s ease both; }
+
+/* --- modal entrance --- */
+.modal-backdrop { animation: fadeIn 0.2s ease both; }
+.modal { animation: popIn 0.26s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* --- login card entrance --- */
+.login-card { animation: popIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* --- alerts slide in --- */
+.alert-error, .alert-ok { animation: fadeInUp 0.3s ease both; }
+
+/* --- reusable loading spinner --- */
+.spinner {
+  display: inline-block;
+  width: 34px;
+  height: 34px;
+  border: 3px solid var(--rule);
+  border-top-color: var(--banker);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+.loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 48px;
+  color: var(--muted);
+}
+.loader .loader-text {
+  font-family: var(--font-mono), 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 
 

@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/api/client';
-import { Money, Stamp, ChequeNo } from '@/components/ui';
+import { Money, Stamp, ChequeNo, Loader } from '@/components/ui';
 
 const thisMonth = new Date().toISOString().slice(0, 7);
 
@@ -24,7 +24,7 @@ export default function Dashboard() {
   }, []);
 
   if (error) return <div className="alert-error">{error}</div>;
-  if (!summary || !account) return <div className="empty">Loading…</div>;
+  if (!summary || !account) return <Loader text="Loading dashboard" />;
   const cs = summary.chequeStats;
 
   return (

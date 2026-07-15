@@ -20,3 +20,10 @@ export const ChequeNo = ({ children }) => <span className="chq-no">{children}</s
 export const Field = ({ label, children }) => (
   <label className="field"><span>{label}</span>{children}</label>
 );
+
+export const Loader = ({ text = 'Loading' }) => (
+  <div className="loader">
+    <span className="spinner" />
+    <span className="loader-text">{text}…</span>
+  </div>
+);
