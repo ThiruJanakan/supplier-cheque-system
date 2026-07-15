@@ -341,29 +341,67 @@ input:focus, select:focus, textarea:focus { border-color: var(--banker); outline
 /* ---- calendar ---- */
 .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
 .cal .dow { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); text-align: center; padding: 4px 0; }
-.cal .day { min-height: 74px; border: 1px solid var(--rule); border-radius: 4px; padding: 5px; background: var(--surface); font-size: 11px; }
+.cal .day { min-height: 74px; border: 1px solid var(--rule); border-radius: 4px; padding: 5px; background: var(--surface); font-size: 11px; text-align: center; }
 .cal .day.other { background: transparent; border-style: dashed; }
-.cal .day .d { font-family: var(--font-mono); color: var(--muted); }
+.cal .day .d { font-family: var(--font-mono); color: var(--muted); text-align: left; }
 .cal .day.today .d { color: var(--banker); font-weight: 700; }
-.cal .due { margin-top: 3px; border-radius: 3px; padding: 2px 4px; font-family: var(--font-mono); font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cal .due.pending { background: var(--amber-soft); color: var(--amber); }
-.cal .due.cleared { background: var(--banker-soft); color: var(--banker); }
-.cal .due.bounced { background: var(--claret-soft); color: var(--claret); }
+
+/* due-date dots: hover (desktop) or tap/focus (mobile) reveals the detail tooltip */
+.due-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin: 2px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  position: relative;
+  vertical-align: middle;
+  background: var(--muted);
+}
+.due-dot.pending { background: var(--amber); }
+.due-dot.cleared { background: var(--banker); }
+.due-dot.bounced { background: var(--claret); }
+
+.due-tooltip {
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 130px;
+  background: var(--ink);
+  color: #fff;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: left;
+  white-space: normal;
+  box-shadow: var(--shadow);
+  z-index: 30;
+}
+.due-tooltip strong { font-family: var(--font-mono); font-size: 11.5px; }
+.due-tooltip .mono { color: #dff3ea; }
+
+.due-dot:hover .due-tooltip,
+.due-dot:focus .due-tooltip,
+.due-dot:focus-visible .due-tooltip {
+  display: flex;
+}
+
+/* keep the tooltip on-screen for the first/last day-of-week columns */
+.cal .day:nth-child(7n+1) .due-tooltip { left: 0; transform: none; }
+.cal .day:nth-child(7n) .due-tooltip { left: auto; right: 0; transform: none; }
+
 @media (max-width: 700px) {
   .cal { gap: 4px; }
   .cal .dow { font-size: 9px; padding: 2px 0 6px; }
-  .cal .day { min-height: 40px; padding: 4px 2px; text-align: center; }
-  .cal .day .d { display: block; font-size: 11px; margin-bottom: 3px; }
-  .cal .due {
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    margin: 1px;
-    padding: 0;
-    border-radius: 50%;
-    font-size: 0;
-    line-height: 0;
-  }
+  .cal .day { min-height: 40px; padding: 4px 2px; }
+  .cal .day .d { text-align: center; }
 }
 
 /* ---- login ---- */

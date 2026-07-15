@@ -38,9 +38,13 @@ function Calendar({ month, items }) {
           <div key={i} className={`day ${date === todayStr ? 'today' : ''}`}>
             <div className="d">{d}</div>
             {(byDay[date] || []).map(c => (
-              <div key={c.id} className={`due ${cls(c.status)}`} title={`${c.supplier_name} · ${c.amount}`}>
-                {c.cheque_number}
-              </div>
+              <button key={c.id} type="button" className={`due-dot ${cls(c.status)}`}>
+                <span className="due-tooltip">
+                  <strong>{c.cheque_number}</strong>
+                  <span>{c.supplier_name}</span>
+                  <Money value={c.amount} />
+                </span>
+              </button>
             ))}
           </div>
         );
