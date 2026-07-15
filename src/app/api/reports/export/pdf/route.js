@@ -12,26 +12,26 @@ export async function GET(request) {
     if (!month) return Response.json({ error: 'Month query param is required.' }, { status: 400 })
 
     const pdfStream = new PassThrough()
-    // Run the PDF generation asynchronously writing to the stream
-    exportPdf(supabase, month, pdfStream)
+    const chunks = []
 
-    // Convert PassThrough Node Stream to Web ReadableStream for standard fetch response
-    const readable = new ReadableStream({
-      start(controller) {
-        pdfStream.on('data', chunk => controller.enqueue(chunk))
-        pdfStream.on('end', () => controller.close())
-        pdfStream.on('error', err => controller.error(err))
-      },
-      cancel() {
-        pdfStream.destroy()
-      }
+    // Wait for the PDF kit document to finish compiling and write all data chunks
+    const pdfPromise = new Promise((resolve, reject) => {
+      pdfStream.on('data', chunk => chunks.push(chunk))
+      pdfStream.on('end', () => resolve(Buffer.concat(chunks)))
+      pdfStream.on('error', err => reject(err))
     })
 
-    return new Response(readable, {
+    // Trigger PDF generation asynchronously and pipe errors to the stream
+    exportPdf(supabase, month, pdfStream).catch(err => pdfStream.emit('error', err))
+
+    // Await the full PDF buffer
+    const pdfBuffer = await pdfPromise
+
+    return new Response(pdfBuffer, {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `inline; filename=monthly_report_${month}.pdf`,
+        'Content-Disposition': `attachment; filename=monthly_report_${month}.pdf`,
       },
     })
   } catch (e) {
