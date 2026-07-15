@@ -4,5 +4,10 @@
       "path": "/api/cron/alert-sweep",
       "schedule": "0 8 * * *"
     }
-  ]
+  ],
+  "functions": {
+    "src/app/api/**/route.js": {
+      "regions": ["syd1"]
+    }
+  }
 }
