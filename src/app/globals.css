@@ -24,9 +24,6 @@
   --slate-soft: #e7ecef;
   --rule: #d8dedc;
   --muted: #66777f;
-  --font-display: var(--font-display), 'Archivo', sans-serif;
-  --font-body: var(--font-body), 'Inter', system-ui, sans-serif;
-  --font-mono: var(--font-mono), 'IBM Plex Mono', monospace;
   --radius: 6px;
   --shadow: 0 1px 2px rgba(33, 50, 60, 0.08), 0 4px 14px rgba(33, 50, 60, 0.06);
 }
@@ -35,12 +32,12 @@
 html, body { height: 100%; }
 body {
   margin: 0;
-  font-family: var(--font-body);
+  font-family: var(--font-body), 'Inter', system-ui, sans-serif;
   font-size: 14px;
   color: var(--ink);
   background: var(--paper);
 }
-h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; margin: 0; }
+h1, h2, h3 { font-family: var(--font-display), 'Archivo', sans-serif; letter-spacing: -0.01em; margin: 0; }
 a { color: var(--banker); }
 button { font-family: inherit; }
 :focus-visible { outline: 2px solid var(--banker); outline-offset: 2px; }
@@ -53,11 +50,11 @@ button { font-family: inherit; }
   display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh;
 }
 .brand {
-  padding: 20px 18px 16px; color: #fff; font-family: var(--font-display);
+  padding: 20px 18px 16px; color: #fff; font-family: var(--font-display), 'Archivo', sans-serif;
   font-weight: 700; font-size: 17px; letter-spacing: 0.02em;
   border-bottom: 1px solid rgba(255,255,255,0.12);
 }
-.brand small { display: block; font-family: var(--font-mono); font-weight: 400; font-size: 10px; color: #8fa4ad; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 3px; }
+.brand small { display: block; font-family: var(--font-mono), 'IBM Plex Mono', monospace; font-weight: 400; font-size: 10px; color: #8fa4ad; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 3px; }
 .nav { padding: 10px 8px; display: flex; flex-direction: column; gap: 2px; flex: 1; overflow-y: auto; }
 .nav a {
   display: block; padding: 9px 12px; border-radius: var(--radius); color: #cfdadf;
@@ -65,7 +62,7 @@ button { font-family: inherit; }
 }
 .nav a:hover { background: rgba(255,255,255,0.07); color: #fff; }
 .nav a.active { background: var(--banker); color: #fff; }
-.nav-section { padding: 14px 12px 4px; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #7b929c; font-family: var(--font-mono); }
+.nav-section { padding: 14px 12px 4px; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #7b929c; font-family: var(--font-mono), 'IBM Plex Mono', monospace; }
 .sidebar-foot { padding: 12px; border-top: 1px solid rgba(255,255,255,0.12); font-size: 12px; }
 .sidebar-foot button { background: none; border: 1px solid rgba(255,255,255,0.25); color: #cfdadf; padding: 7px 10px; width: 100%; border-radius: var(--radius); cursor: pointer; }
 .sidebar-foot button:hover { border-color: #fff; color: #fff; }
@@ -256,40 +253,52 @@ button { font-family: inherit; }
 @media (max-width: 640px) { .grid.cols-4, .grid.cols-3, .grid.cols-2 { grid-template-columns: 1fr; } }
 
 .stat { padding: 16px 18px; }
-.stat .label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-family: var(--font-mono); }
-.stat .value { font-family: var(--font-mono); font-size: 24px; font-weight: 600; margin-top: 6px; }
+.stat .label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-family: var(--font-mono), 'IBM Plex Mono', monospace; }
+.stat .value { font-family: var(--font-mono), 'IBM Plex Mono', monospace; font-size: 24px; font-weight: 600; margin-top: 6px; }
 .stat .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
 
 /* ---- tables ---- */
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-th { text-align: left; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-family: var(--font-mono); font-weight: 500; padding: 10px 12px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th { text-align: left; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-family: var(--font-mono), 'IBM Plex Mono', monospace; font-weight: 500; padding: 10px 12px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
 td { padding: 11px 12px; border-bottom: 1px solid var(--rule); vertical-align: middle; }
 tr:last-child td { border-bottom: 0; }
 tbody tr:hover { background: #fafbfa; }
-td.num, th.num { text-align: right; font-family: var(--font-mono); white-space: nowrap; }
-.mono { font-family: var(--font-mono); }
+td.num, th.num { text-align: right; font-family: var(--font-mono), 'IBM Plex Mono', monospace; white-space: nowrap; }
+.mono { font-family: var(--font-mono), 'IBM Plex Mono', monospace; }
 .muted { color: var(--muted); }
 
-/* ---- signature element: cheque-leaf number + rubber stamp status ---- */
+/* ---- signature element: cheque-leaf number + status pills ---- */
 .chq-no {
-  font-family: var(--font-mono); font-weight: 600; letter-spacing: 0.06em;
-  background: repeating-linear-gradient(90deg, transparent 0 6px, rgba(33,50,60,0.035) 6px 12px);
-  border: 1px solid var(--rule); border-left: 3px double var(--ink-2);
-  padding: 3px 8px; border-radius: 3px; display: inline-block;
+  font-family: var(--font-mono), 'IBM Plex Mono', monospace;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 4px 8px;
+  background: #f3f5f4;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  display: inline-block;
+  color: var(--ink);
+  letter-spacing: 0.02em;
 }
 .stamp {
-  display: inline-block; font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;
-  letter-spacing: 0.14em; text-transform: uppercase; padding: 3px 9px;
-  border: 1.5px solid currentColor; border-radius: 3px; box-shadow: inset 0 0 0 1.5px var(--surface), inset 0 0 0 2.5px currentColor;
-  transform: rotate(-2deg); background: var(--surface); white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono), 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
 }
-.stamp.issued        { color: var(--ink-2); }
-.stamp.pending       { color: var(--amber); }
-.stamp.partially_paid{ color: #7a6a2a; }
-.stamp.cleared       { color: var(--banker); }
-.stamp.bounced       { color: var(--claret); }
-.stamp.cancelled     { color: var(--muted); text-decoration: line-through; }
+.stamp.issued        { background: #e0f2fe; color: #0369a1; }
+.stamp.pending       { background: #fef3c7; color: #b45309; }
+.stamp.partially_paid{ background: #fef3c7; color: #b45309; }
+.stamp.cleared       { background: #dcfce7; color: #15803d; }
+.stamp.bounced       { background: #fee2e2; color: #b91c1c; }
+.stamp.cancelled     { background: #f3f4f6; color: #4b5563; }
 
 /* ---- forms & buttons ---- */
 label.field { display: block; margin-bottom: 12px; }
@@ -353,5 +362,154 @@ input:focus, select:focus, textarea:focus { border-color: var(--banker); outline
 }
 .login-card { width: 100%; max-width: 380px; background: var(--surface); border-radius: 8px; padding: 30px 28px; box-shadow: 0 24px 80px rgba(0,0,0,0.4); }
 .login-card h1 { font-size: 21px; }
-.login-card .tag { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin: 6px 0 22px; }
+.login-card .tag { font-family: var(--font-mono), 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin: 6px 0 22px; }
+
+/* ---- mobile dashboard layout adjustments ---- */
+.kpi-container {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(4, 1fr);
+  margin-bottom: 20px;
+}
+.kpi-balance {
+  grid-column: span 1;
+}
+.kpi-row-2 {
+  display: contents; /* Direct grid children on desktop */
+}
+.kpi-cheques {
+  grid-column: span 1;
+}
+.kpi-card {
+  padding: 18px;
+}
+.kpi-label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-family: var(--font-mono), 'IBM Plex Mono', monospace;
+}
+.kpi-val {
+  font-family: var(--font-mono), 'IBM Plex Mono', monospace;
+  font-size: 24px;
+  font-weight: 600;
+  margin-top: 6px;
+}
+.kpi-hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* stats compact inside cheques card */
+.cheque-stats-compact {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  gap: 10px;
+}
+.stat-block {
+  flex: 1;
+  background: var(--paper);
+  padding: 10px;
+  border-radius: 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.stat-block-val {
+  font-family: var(--font-mono), 'IBM Plex Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.stat-block-lbl {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* mobile-only and desktop-only displays */
+.desktop-only-view {
+  display: block;
+}
+.mobile-only-view {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .kpi-container {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .kpi-balance {
+    grid-column: span 1;
+  }
+  .kpi-row-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    grid-column: span 1;
+  }
+  .kpi-cheques {
+    grid-column: span 1;
+  }
+  
+  /* visual spacing tightening */
+  .main {
+    padding: 16px 14px 60px;
+  }
+  .card {
+    border-radius: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .desktop-only-view {
+    display: none;
+  }
+  .mobile-only-view {
+    display: block;
+  }
+  
+  /* cheque card styles on mobile */
+  .cheques-card-list {
+    display: flex;
+    flex-direction: column;
+  }
+  .cheque-card {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--surface);
+  }
+  .cheque-card:last-child {
+    border-bottom: 0;
+  }
+  .cheque-card-header,
+  .cheque-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+  .cheque-card-supplier {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 8px 0;
+    color: var(--ink);
+  }
+  .cheque-card-date {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .cheque-card-amount {
+    font-weight: 700;
+    font-size: 14.5px;
+  }
+}
+
 

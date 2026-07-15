@@ -1,8 +1,15 @@
 "use client";
 
-export const Money = ({ value, currency = 'LKR' }) => (
-  <span className="mono">{currency} {Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-);
+export const Money = ({ value, currency = 'LKR' }) => {
+  const num = Number(value || 0);
+  const options = num % 1 !== 0
+    ? { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+    : { minimumFractionDigits: 0, maximumFractionDigits: 0 };
+  return (
+    <span className="mono">{currency} {num.toLocaleString('en-US', options)}</span>
+  );
+};
+
 
 export const Stamp = ({ status }) => (
   <span className={`stamp ${status}`}>{status.replace('_', ' ')}</span>

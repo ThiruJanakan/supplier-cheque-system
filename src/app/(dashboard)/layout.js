@@ -35,13 +35,15 @@ function DashboardLayoutContent({ children }) {
   return (
     <>
       <header className="mobile-header">
-        <div className="mobile-header-brand">
-          Cheque Manager
-          <small>Supplier payments ledger</small>
-        </div>
         <button className="mobile-menu-btn" onClick={() => setOpen(true)} aria-label="Open menu">
           ☰
         </button>
+        <div className="mobile-header-brand">
+          Cheque Manager
+        </div>
+        <div style={{ fontSize: '18px', padding: '4px 8px', cursor: 'pointer', userSelect: 'none' }} title={`Signed in as ${user?.username}`}>
+          👤
+        </div>
       </header>
 
       <div className={`sidebar-backdrop ${open ? 'show' : ''}`} onClick={() => setOpen(false)} />
