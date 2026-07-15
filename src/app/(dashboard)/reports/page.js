@@ -89,216 +89,229 @@ export default function Reports() {
         hour: '2-digit', minute: '2-digit', second: '2-digit'
       });
 
-      // ---- Colors ----
-      const cPrimary = [24, 92, 69]; // Banker Green
-      const cMuted = [100, 110, 120];
-      const cDark = [30, 40, 45];
+      // ---- Color Constants ----
+      const cPrimary = [24, 92, 69]; // Banker Green (#185c45)
+      const cMuted = [107, 114, 128]; // Muted Slate Gray (#6b7280)
+      const cDark = [17, 24, 39]; // Bold Dark Gray (#111827)
       
-      // ---- Header Layout ----
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(22);
-      doc.setTextColor(...cPrimary);
-      doc.text("CHEQUE MANAGER", 15, 22);
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(...cMuted);
-      doc.text("SUPPLIER PAYMENTS & LEDGER REPORT", 15, 27);
+      // ---- Title Banner Block ----
+      doc.setFillColor(...cPrimary);
+      doc.roundedRect(15, 15, 180, 24, 2, 2, 'F');
       
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.setTextColor(...cDark);
-      doc.text(`REPORT PERIOD: ${monthName.toUpperCase()}`, 195, 22, { align: 'right' });
+      doc.setFontSize(13);
+      doc.setTextColor(255, 255, 255);
+      doc.text("CHEQUE MANAGER · PERFORMANCE REPORT", 20, 25);
       
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8.5);
-      doc.setTextColor(...cMuted);
-      doc.text(`Generated: ${generatedTime}`, 195, 27, { align: 'right' });
+      doc.text(`Generated on: ${generatedTime}`, 20, 32);
 
-      // Solid Divider line
-      doc.setDrawColor(...cPrimary);
-      doc.setLineWidth(1);
-      doc.line(15, 32, 195, 32);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text(monthName.toUpperCase(), 190, 29, { align: 'right' });
 
-      // ---- KPI Metrics Box Cards ----
-      // Card 1
-      doc.setFillColor(245, 248, 246);
-      doc.roundedRect(15, 38, 85, 28, 3, 3, 'F');
+      // ---- KPI Summary Cards ----
+      // Card 1: Supplier Spending
+      doc.setFillColor(249, 250, 251);
+      doc.setDrawColor(229, 231, 235);
+      doc.roundedRect(15, 45, 87, 28, 2, 2, 'FD');
+      
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
+      doc.setFontSize(7.5);
       doc.setTextColor(...cMuted);
-      doc.text("TOTAL SUPPLIER SPENDING", 20, 44);
+      doc.text("TOTAL SUPPLIER SPENDING", 20, 52);
+      
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(15);
+      doc.setFontSize(14);
       doc.setTextColor(...cDark);
-      doc.text(fmt(summary.spendTotal), 20, 56);
+      doc.text(fmt(summary.spendTotal), 20, 64);
 
-      // Card 2
-      doc.setFillColor(245, 248, 246);
-      doc.roundedRect(110, 38, 85, 28, 3, 3, 'F');
+      // Card 2: Revenue Deposited
+      doc.setFillColor(249, 250, 251);
+      doc.setDrawColor(229, 231, 235);
+      doc.roundedRect(108, 45, 87, 28, 2, 2, 'FD');
+      
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
+      doc.setFontSize(7.5);
       doc.setTextColor(...cMuted);
-      doc.text("TOTAL REVENUE DEPOSITED", 115, 44);
+      doc.text("TOTAL REVENUE DEPOSITED", 113, 52);
+      
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(15);
+      doc.setFontSize(14);
       doc.setTextColor(...cDark);
-      doc.text(fmt(summary.revenueTotal), 115, 56);
+      doc.text(fmt(summary.revenueTotal), 113, 64);
 
-      // ---- Cheques Stats Block ----
-      doc.setDrawColor(230, 235, 232);
-      doc.setLineWidth(0.5);
-      doc.line(15, 74, 195, 74);
+      // ---- Card 3: Cheques Stats Summary ----
+      doc.setFillColor(249, 250, 251);
+      doc.setDrawColor(229, 231, 235);
+      doc.roundedRect(15, 79, 180, 20, 2, 2, 'FD');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(...cMuted);
+      doc.text("CHEQUES STATUS BREAKDOWN (THIS MONTH)", 20, 85);
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(10);
-      doc.setTextColor(...cPrimary);
-      doc.text("CHEQUES ISSUED:", 15, 82);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
       doc.setTextColor(...cDark);
-      doc.text(String(cs.total_issued), 55, 82);
-
+      doc.text(`TOTAL ISSUED: ${cs.total_issued}`, 20, 93);
+      
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
-      doc.setTextColor(...cMuted);
-      doc.text(`(${cs.pending_clearance} Pending  ·  ${cs.cleared} Cleared  ·  ${cs.bounced} Bounced)`, 70, 82);
+      doc.setTextColor(217, 119, 6); // Amber
+      doc.text(`Pending: ${cs.pending_clearance}`, 70, 93);
+      
+      doc.setTextColor(16, 124, 65); // Green
+      doc.text(`Cleared: ${cs.cleared}`, 115, 93);
+      
+      doc.setTextColor(185, 28, 28); // Red
+      doc.text(`Bounced: ${cs.bounced}`, 160, 93);
 
-      doc.line(15, 88, 195, 88);
-
-      // ---- Spending by Supplier Section ----
-      let y = 98;
+      // ---- Spending by Supplier Table ----
+      let y = 108;
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
+      doc.setFontSize(11);
       doc.setTextColor(...cPrimary);
       doc.text("SPENDING BY SUPPLIER", 15, y);
 
-      y += 6;
-      doc.setDrawColor(200, 210, 205);
-      doc.setLineWidth(0.5);
-      doc.line(15, y, 195, y); // header underline
+      y += 4;
+      // Header fill
+      doc.setFillColor(...cPrimary);
+      doc.rect(15, y, 180, 7, 'F');
       
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(...cMuted);
-      y += 5;
-      doc.text("SUPPLIER NAME", 15, y);
-      doc.text("TOTAL SPENDING", 195, y, { align: 'right' });
+      doc.setFontSize(8);
+      doc.setTextColor(255, 255, 255);
+      doc.text("SUPPLIER NAME", 20, y + 4.5);
+      doc.text("TOTAL SPENDING", 190, y + 4.5, { align: 'right' });
 
-      y += 3;
-      doc.line(15, y, 195, y);
+      y += 7;
 
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9.5);
-      doc.setTextColor(...cDark);
-      
       if (summary.spendBySupplier.length === 0) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9.5);
+        doc.setTextColor(...cDark);
         y += 8;
-        doc.text("No purchases recorded this month.", 15, y);
+        doc.text("No purchases recorded this month.", 20, y);
       } else {
-        summary.spendBySupplier.forEach(r => {
-          y += 8;
-          doc.text(r.name, 15, y);
-          doc.setFont('helvetica', 'bold');
-          doc.text(fmt(r.total), 195, y, { align: 'right' });
+        summary.spendBySupplier.forEach((r, idx) => {
+          // Zebra striping background
+          if (idx % 2 === 1) {
+            doc.setFillColor(249, 250, 251);
+            doc.rect(15, y, 180, 8, 'F');
+          }
+          
           doc.setFont('helvetica', 'normal');
+          doc.setFontSize(9);
+          doc.setTextColor(...cDark);
+          doc.text(r.name, 20, y + 5.5);
+          
+          doc.setFont('helvetica', 'bold');
+          doc.text(fmt(r.total), 190, y + 5.5, { align: 'right' });
           
           // Draw thin separation line
-          doc.setDrawColor(240, 240, 240);
-          doc.line(15, y + 2, 195, y + 2);
+          doc.setDrawColor(243, 244, 246);
+          doc.line(15, y + 8, 195, y + 8);
+          y += 8;
         });
       }
 
-      // ---- Upcoming Cheques Section ----
-      y += 18;
+      // ---- Upcoming Cheques Table ----
+      y += 14;
       
       // Page break check
       if (y > 200) {
         doc.addPage();
-        y = 20;
+        y = 15;
       }
       
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
+      doc.setFontSize(11);
       doc.setTextColor(...cPrimary);
       doc.text("UPCOMING CHEQUE DUE DATES", 15, y);
 
-      y += 6;
-      doc.setDrawColor(200, 210, 205);
-      doc.line(15, y, 195, y); // header underline
+      y += 4;
+      
+      // Header fill
+      doc.setFillColor(...cPrimary);
+      doc.rect(15, y, 180, 7, 'F');
       
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(...cMuted);
-      y += 5;
-      doc.text("DUE DATE", 15, y);
-      doc.text("CHEQUE NO", 42, y);
-      doc.text("SUPPLIER", 75, y);
-      doc.text("STATUS", 145, y);
-      doc.text("AMOUNT", 195, y, { align: 'right' });
+      doc.setFontSize(8);
+      doc.setTextColor(255, 255, 255);
+      doc.text("DUE DATE", 20, y + 4.5);
+      doc.text("CHEQUE NO", 45, y + 4.5);
+      doc.text("SUPPLIER", 78, y + 4.5);
+      doc.text("STATUS", 145, y + 4.5);
+      doc.text("AMOUNT", 190, y + 4.5, { align: 'right' });
 
-      y += 3;
-      doc.line(15, y, 195, y);
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(...cDark);
+      y += 7;
 
       if (calendar.length === 0) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9.5);
+        doc.setTextColor(...cDark);
         y += 8;
-        doc.text("No pending cheques scheduled.", 15, y);
+        doc.text("No pending cheques scheduled.", 20, y);
       } else {
-        calendar.forEach(c => {
-          y += 8;
-          if (y > 275) {
+        calendar.forEach((c, idx) => {
+          // Page split check
+          if (y > 270) {
             doc.addPage();
-            y = 20;
+            y = 15;
             // Redraw table headers on new page
+            doc.setFillColor(...cPrimary);
+            doc.rect(15, y, 180, 7, 'F');
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(9);
-            doc.setTextColor(...cMuted);
-            doc.text("DUE DATE", 15, y);
-            doc.text("CHEQUE NO", 42, y);
-            doc.text("SUPPLIER", 75, y);
-            doc.text("STATUS", 145, y);
-            doc.text("AMOUNT", 195, y, { align: 'right' });
-            y += 3;
-            doc.line(15, y, 195, y);
-            y += 8;
+            doc.setFontSize(8);
+            doc.setTextColor(255, 255, 255);
+            doc.text("DUE DATE", 20, y + 4.5);
+            doc.text("CHEQUE NO", 45, y + 4.5);
+            doc.text("SUPPLIER", 78, y + 4.5);
+            doc.text("STATUS", 145, y + 4.5);
+            doc.text("AMOUNT", 190, y + 4.5, { align: 'right' });
+            y += 7;
+          }
+
+          // Zebra striping background
+          if (idx % 2 === 1) {
+            doc.setFillColor(249, 250, 251);
+            doc.rect(15, y, 180, 8, 'F');
           }
 
           doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8.5);
           doc.setTextColor(...cDark);
-          doc.text(c.due_date, 15, y);
-          doc.text(c.cheque_number, 42, y);
-          doc.text(c.supplier_name.length > 32 ? c.supplier_name.slice(0, 30) + '...' : c.supplier_name, 75, y);
           
-          // Status color
+          doc.text(c.due_date, 20, y + 5.5);
+          doc.text(c.cheque_number, 45, y + 5.5);
+          doc.text(c.supplier_name.length > 32 ? c.supplier_name.slice(0, 30) + '...' : c.supplier_name, 78, y + 5.5);
+          
+          // Status color and bold font
           const status = c.status.toLowerCase();
+          doc.setFont('helvetica', 'bold');
           if (status === 'cleared') {
             doc.setTextColor(16, 124, 65); // Green
-            doc.setFont('helvetica', 'bold');
-            doc.text("CLEARED", 145, y);
+            doc.text("CLEARED", 145, y + 5.5);
           } else if (status === 'bounced') {
             doc.setTextColor(185, 28, 28); // Red
-            doc.setFont('helvetica', 'bold');
-            doc.text("BOUNCED", 145, y);
+            doc.text("BOUNCED", 145, y + 5.5);
           } else if (status === 'issued') {
             doc.setTextColor(29, 78, 216); // Blue
-            doc.setFont('helvetica', 'bold');
-            doc.text("ISSUED", 145, y);
+            doc.text("ISSUED", 145, y + 5.5);
           } else {
             doc.setTextColor(217, 119, 6); // Amber
-            doc.setFont('helvetica', 'bold');
-            doc.text("PENDING", 145, y);
+            doc.text("PENDING", 145, y + 5.5);
           }
           
           doc.setTextColor(...cDark);
           doc.setFont('helvetica', 'bold');
-          doc.text(fmt(c.amount), 195, y, { align: 'right' });
+          doc.text(fmt(c.amount), 190, y + 5.5, { align: 'right' });
 
-          doc.setDrawColor(245, 245, 245);
-          doc.line(15, y + 2, 195, y + 2);
+          doc.setDrawColor(243, 244, 246);
+          doc.line(15, y + 8, 195, y + 8);
+          y += 8;
         });
       }
 
