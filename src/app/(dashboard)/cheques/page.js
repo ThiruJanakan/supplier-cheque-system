@@ -88,20 +88,20 @@ export default function Cheques() {
           {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
       </div>
-      <div className="card table-wrap">
+      <div className="card table-wrap responsive-table">
         <table>
           <thead><tr><th>Cheque no</th><th>Supplier</th><th className="num">Amount</th><th>Issued</th><th>Due</th><th>Status</th><th>Move to</th><th></th></tr></thead>
           <tbody>
             {rows.length === 0 && <tr><td colSpan={8} className="empty">No cheques found. Register a cheque to begin tracking due dates.</td></tr>}
             {rows.map(c => (
               <tr key={c.id}>
-                <td><ChequeNo>{c.cheque_number}</ChequeNo></td>
-                <td>{c.supplier_name}</td>
-                <td className="num"><Money value={c.amount} /></td>
-                <td className="mono">{c.issue_date}</td>
-                <td className="mono">{c.due_date}</td>
-                <td><Stamp status={c.status} /></td>
-                <td>
+                <td data-label="Cheque no"><ChequeNo>{c.cheque_number}</ChequeNo></td>
+                <td data-label="Supplier">{c.supplier_name}</td>
+                <td className="num" data-label="Amount"><Money value={c.amount} /></td>
+                <td className="mono" data-label="Issued">{c.issue_date}</td>
+                <td className="mono" data-label="Due">{c.due_date}</td>
+                <td data-label="Status"><Stamp status={c.status} /></td>
+                <td data-label="Move to">
                   {NEXT[c.status].length > 0 ? (
                     <select defaultValue="" onChange={e => { setStatus(c, e.target.value); e.target.value = ''; }}>
                       <option value="" disabled>Change…</option>

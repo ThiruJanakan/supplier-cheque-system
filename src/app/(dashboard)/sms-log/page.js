@@ -41,18 +41,18 @@ export default function SmsLog() {
           {CATS.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
-      <div className="card table-wrap">
+      <div className="card table-wrap responsive-table">
         <table>
           <thead><tr><th>Sent at</th><th>Category</th><th>Recipient</th><th>Message</th><th>Status</th></tr></thead>
           <tbody>
             {rows.length === 0 && <tr><td colSpan={5} className="empty">No messages sent yet. Alerts run automatically every morning.</td></tr>}
             {rows.map(l => (
               <tr key={l.id}>
-                <td className="mono" style={{ fontSize: 12 }}>{l.sent_at}</td>
-                <td className="mono">{l.category}</td>
-                <td className="mono">{l.recipient}</td>
-                <td style={{ maxWidth: 420 }}>{l.message}{l.error && <div className="muted" style={{ color: 'var(--claret)' }}>{l.error}</div>}</td>
-                <td><span className="mono" style={{ color: badge(l.status), fontWeight: 600, textTransform: 'uppercase', fontSize: 11 }}>{l.status}</span></td>
+                <td className="mono" data-label="Sent at" style={{ fontSize: 12 }}>{l.sent_at}</td>
+                <td className="mono" data-label="Category">{l.category}</td>
+                <td className="mono" data-label="Recipient">{l.recipient}</td>
+                <td data-label="Message" style={{ maxWidth: 420 }}>{l.message}{l.error && <div className="muted" style={{ color: 'var(--claret)' }}>{l.error}</div>}</td>
+                <td data-label="Status"><span className="mono" style={{ color: badge(l.status), fontWeight: 600, textTransform: 'uppercase', fontSize: 11 }}>{l.status}</span></td>
               </tr>
             ))}
           </tbody>

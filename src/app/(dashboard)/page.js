@@ -44,18 +44,18 @@ export default function Dashboard() {
       <div className="grid cols-2">
         <div className="card">
           <div className="card-pad" style={{ borderBottom: '1px solid var(--rule)' }}><h2 style={{ fontSize: 16 }}>Upcoming due dates</h2></div>
-          <div className="table-wrap">
+          <div className="table-wrap responsive-table">
             <table>
               <thead><tr><th>Due</th><th>Cheque</th><th>Supplier</th><th className="num">Amount</th><th>Status</th></tr></thead>
               <tbody>
                 {summary.upcoming.length === 0 && <tr><td colSpan={5} className="empty">No pending cheques. Clear inbox.</td></tr>}
                 {summary.upcoming.slice(0, 8).map(c => (
                   <tr key={c.id}>
-                    <td className="mono">{c.due_date}</td>
-                    <td><ChequeNo>{c.cheque_number}</ChequeNo></td>
-                    <td>{c.supplier_name}</td>
-                    <td className="num"><Money value={c.amount} /></td>
-                    <td><Stamp status={c.status} /></td>
+                    <td className="mono" data-label="Due">{c.due_date}</td>
+                    <td data-label="Cheque"><ChequeNo>{c.cheque_number}</ChequeNo></td>
+                    <td data-label="Supplier">{c.supplier_name}</td>
+                    <td className="num" data-label="Amount"><Money value={c.amount} /></td>
+                    <td data-label="Status"><Stamp status={c.status} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -64,13 +64,16 @@ export default function Dashboard() {
         </div>
         <div className="card">
           <div className="card-pad" style={{ borderBottom: '1px solid var(--rule)' }}><h2 style={{ fontSize: 16 }}>Spending by supplier · {thisMonth}</h2></div>
-          <div className="table-wrap">
+          <div className="table-wrap responsive-table">
             <table>
               <thead><tr><th>Supplier</th><th className="num">Total</th></tr></thead>
               <tbody>
                 {summary.spendBySupplier.length === 0 && <tr><td colSpan={2} className="empty">No purchases recorded this month.</td></tr>}
                 {summary.spendBySupplier.map(r => (
-                  <tr key={r.id}><td>{r.name}</td><td className="num"><Money value={r.total} /></td></tr>
+                  <tr key={r.id}>
+                    <td data-label="Supplier">{r.name}</td>
+                    <td className="num" data-label="Total"><Money value={r.total} /></td>
+                  </tr>
                 ))}
               </tbody>
             </table>

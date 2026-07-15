@@ -71,12 +71,19 @@ export default function Settings() {
             <p className="muted" style={{ marginTop: 0 }}>Backups run automatically every night. Managed securely by Supabase.</p>
             <button className="btn ghost" onClick={backupNow}>Back up now</button>
             {backups.length > 0 && (
-              <table style={{ marginTop: 12 }}>
-                <thead><tr><th>File</th><th className="num">Size</th></tr></thead>
-                <tbody>
-                  {backups.map(b => <tr key={b.file}><td className="mono" style={{ fontSize: 12 }}>{b.file}</td><td className="num">{(b.size / 1024).toFixed(0)} KB</td></tr>)}
-                </tbody>
-              </table>
+              <div className="table-wrap responsive-table" style={{ marginTop: 12 }}>
+                <table>
+                  <thead><tr><th>File</th><th className="num">Size</th></tr></thead>
+                  <tbody>
+                    {backups.map(b => (
+                      <tr key={b.file}>
+                        <td className="mono" data-label="File" style={{ fontSize: 12 }}>{b.file}</td>
+                        <td className="num" data-label="Size">{(b.size / 1024).toFixed(0)} KB</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>

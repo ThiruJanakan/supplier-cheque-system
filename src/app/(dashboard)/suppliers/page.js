@@ -45,17 +45,17 @@ export default function Suppliers() {
       <div className="toolbar">
         <input placeholder="Search name, contact or phone…" value={search} onChange={e => setSearch(e.target.value)} />
       </div>
-      <div className="card table-wrap">
+      <div className="card table-wrap responsive-table">
         <table>
           <thead><tr><th>Name</th><th>Contact</th><th>Phone</th><th>Bank account details</th><th className="num">Purchases</th><th className="num">Cheques issued</th><th></th></tr></thead>
           <tbody>
             {rows.length === 0 && <tr><td colSpan={7} className="empty">No suppliers yet. Add your first supplier to start recording purchases.</td></tr>}
             {rows.map(s => (
               <tr key={s.id}>
-                <td><strong>{s.name}</strong></td>
-                <td>{s.contact_person || <span className="muted">—</span>}</td>
-                <td className="mono">{s.phone || '—'}</td>
-                <td>
+                <td data-label="Name"><strong>{s.name}</strong></td>
+                <td data-label="Contact">{s.contact_person || <span className="muted">—</span>}</td>
+                <td className="mono" data-label="Phone">{s.phone || '—'}</td>
+                <td data-label="Bank details">
                   {s.bank_name ? (
                     <div>
                       <div><strong>{s.bank_name}</strong></div>
@@ -65,8 +65,8 @@ export default function Suppliers() {
                     </div>
                   ) : <span className="muted">—</span>}
                 </td>
-                <td className="num"><Money value={s.total_purchases} /></td>
-                <td className="num"><Money value={s.total_cheques} /></td>
+                <td className="num" data-label="Purchases"><Money value={s.total_purchases} /></td>
+                <td className="num" data-label="Cheques"><Money value={s.total_cheques} /></td>
                 <td style={{ whiteSpace: 'nowrap' }}>
                   <button className="btn ghost sm" onClick={() => setEditing({ ...blank, ...s })}>Edit</button>{' '}
                   <button className="btn danger sm" onClick={() => remove(s)}>Delete</button>

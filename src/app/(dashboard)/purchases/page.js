@@ -45,7 +45,7 @@ export default function Purchases() {
           {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
       </div>
-      <div className="card table-wrap">
+      <div className="card table-wrap responsive-table">
         <table>
           <thead><tr><th>Date</th><th>Invoice</th><th>Supplier</th><th>Description</th><th className="num">Total</th><th className="num">Paid</th><th className="num">Outstanding</th><th></th></tr></thead>
           <tbody>
@@ -54,13 +54,13 @@ export default function Purchases() {
               const outstanding = p.total_amount - p.paid_amount;
               return (
                 <tr key={p.id}>
-                  <td className="mono">{p.purchase_date}</td>
-                  <td className="mono">{p.invoice_no || `#${p.id}`}</td>
-                  <td>{p.supplier_name}</td>
-                  <td className="muted">{p.description || '—'}</td>
-                  <td className="num"><Money value={p.total_amount} /></td>
-                  <td className="num"><Money value={p.paid_amount} /></td>
-                  <td className="num" style={{ color: outstanding > 0.005 ? 'var(--amber)' : 'var(--banker)', fontWeight: 600 }}>
+                  <td className="mono" data-label="Date">{p.purchase_date}</td>
+                  <td className="mono" data-label="Invoice">{p.invoice_no || `#${p.id}`}</td>
+                  <td data-label="Supplier">{p.supplier_name}</td>
+                  <td className="muted" data-label="Description">{p.description || '—'}</td>
+                  <td className="num" data-label="Total"><Money value={p.total_amount} /></td>
+                  <td className="num" data-label="Paid"><Money value={p.paid_amount} /></td>
+                  <td className="num" data-label="Outstanding" style={{ color: outstanding > 0.005 ? 'var(--amber)' : 'var(--banker)', fontWeight: 600 }}>
                     <Money value={outstanding} />
                   </td>
                   <td style={{ whiteSpace: 'nowrap' }}>

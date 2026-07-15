@@ -65,16 +65,16 @@ export default function Revenue() {
 
           <div className="card">
             <div className="card-pad" style={{ borderBottom: '1px solid var(--rule)' }}><h2 style={{ fontSize: 16 }}>Revenue entries</h2></div>
-            <div className="table-wrap">
+            <div className="table-wrap responsive-table">
               <table>
                 <thead><tr><th>Date</th><th className="num">Amount</th><th>Notes</th><th></th></tr></thead>
                 <tbody>
                   {entries.length === 0 && <tr><td colSpan={4} className="empty">No revenue recorded yet.</td></tr>}
                   {entries.map(r => (
                     <tr key={r.id}>
-                      <td className="mono">{r.entry_date}</td>
-                      <td className="num"><Money value={r.amount} /></td>
-                      <td className="muted">{r.notes || '—'}</td>
+                      <td className="mono" data-label="Date">{r.entry_date}</td>
+                      <td className="num" data-label="Amount"><Money value={r.amount} /></td>
+                      <td className="muted" data-label="Notes">{r.notes || '—'}</td>
                       <td><button className="btn danger sm" onClick={() => remove(r)}>Reverse</button></td>
                     </tr>
                   ))}
@@ -86,18 +86,18 @@ export default function Revenue() {
 
         <div className="card">
           <div className="card-pad" style={{ borderBottom: '1px solid var(--rule)' }}><h2 style={{ fontSize: 16 }}>Savings account ledger</h2></div>
-          <div className="table-wrap">
+          <div className="table-wrap responsive-table">
             <table>
               <thead><tr><th>When</th><th>Type</th><th>Reference</th><th className="num">Amount</th><th className="num">Balance</th></tr></thead>
               <tbody>
                 {(!account || account.transactions.length === 0) && <tr><td colSpan={5} className="empty">Ledger is empty.</td></tr>}
                 {account?.transactions.map(t => (
                   <tr key={t.id}>
-                    <td className="mono" style={{ fontSize: 12 }}>{t.created_at}</td>
-                    <td>{t.type.replace('_', ' ')}</td>
-                    <td className="muted">{t.reference}</td>
-                    <td className="num" style={{ color: t.amount < 0 ? 'var(--claret)' : 'var(--banker)' }}><Money value={t.amount} /></td>
-                    <td className="num"><Money value={t.balance_after} /></td>
+                    <td className="mono" data-label="When" style={{ fontSize: 12 }}>{t.created_at}</td>
+                    <td data-label="Type">{t.type.replace('_', ' ')}</td>
+                    <td className="muted" data-label="Ref">{t.reference}</td>
+                    <td className="num" data-label="Amount" style={{ color: t.amount < 0 ? 'var(--claret)' : 'var(--banker)' }}><Money value={t.amount} /></td>
+                    <td className="num" data-label="Balance"><Money value={t.balance_after} /></td>
                   </tr>
                 ))}
               </tbody>

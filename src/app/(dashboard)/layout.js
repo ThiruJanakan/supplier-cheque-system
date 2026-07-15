@@ -33,39 +33,53 @@ function DashboardLayoutContent({ children }) {
   }
 
   return (
-    <div className="shell">
-      <aside className={`sidebar ${open ? 'open' : ''}`} onClick={() => setOpen(false)}>
-        <div className="brand">Cheque Manager<small>Supplier payments ledger</small></div>
-        <nav className="nav">
-          {nav.map(g => (
-            <div key={g.section}>
-              <div className="nav-section">{g.section}</div>
-              {g.links.map(([to, label]) => {
-                const isActive = to === '/' ? pathname === '/' : pathname === to || pathname.startsWith(to + '/');
-                return (
-                  <Link 
-                    key={to} 
-                    href={to} 
-                    className={isActive ? 'active' : ''}
-                  >
-                    {label}
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
-        </nav>
-        <div className="sidebar-foot">
-          <div style={{ marginBottom: 8 }}>Signed in as <strong>{user?.username}</strong></div>
-          <button onClick={logout}>Sign out</button>
+    <>
+      <header className="mobile-header">
+        <div className="mobile-header-brand">
+          Cheque Manager
+          <small>Supplier payments ledger</small>
         </div>
-      </aside>
-      <main className="main">
-        <button className="menu-btn" onClick={() => setOpen(true)}>☰ Menu</button>
-        {children}
-      </main>
-    </div>
+        <button className="mobile-menu-btn" onClick={() => setOpen(true)} aria-label="Open menu">
+          ☰
+        </button>
+      </header>
+
+      <div className={`sidebar-backdrop ${open ? 'show' : ''}`} onClick={() => setOpen(false)} />
+
+      <div className="shell">
+        <aside className={`sidebar ${open ? 'open' : ''}`} onClick={() => setOpen(false)}>
+          <div className="brand">Cheque Manager<small>Supplier payments ledger</small></div>
+          <nav className="nav">
+            {nav.map(g => (
+              <div key={g.section}>
+                <div className="nav-section">{g.section}</div>
+                {g.links.map(([to, label]) => {
+                  const isActive = to === '/' ? pathname === '/' : pathname === to || pathname.startsWith(to + '/');
+                  return (
+                    <Link 
+                      key={to} 
+                      href={to} 
+                      className={isActive ? 'active' : ''}
+                    >
+                      {label}
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
+          </nav>
+          <div className="sidebar-foot">
+            <div style={{ marginBottom: 8 }}>Signed in as <strong>{user?.username}</strong></div>
+            <button onClick={logout}>Sign out</button>
+          </div>
+        </aside>
+        <main className="main">
+          {children}
+        </main>
+      </div>
+    </>
   );
+
 }
 
 export default function DashboardLayout({ children }) {

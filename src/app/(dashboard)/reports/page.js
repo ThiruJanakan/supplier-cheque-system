@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { api } from '@/api/client';
-import { Money, Stamp } from '@/components/ui';
+import { Money, Stamp, ChequeNo } from '@/components/ui';
 import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from 'recharts';
@@ -123,15 +123,46 @@ export default function Reports() {
         <div className="card card-pad">
           <h2 style={{ fontSize: 16, marginBottom: 10 }}>Due date calendar · {month}</h2>
           <Calendar month={month} items={calendar} />
+
+          {/* Mobile-only list of due cheques */}
+          <div className="mobile-due-list" style={{ marginTop: 20 }}>
+            <h3 style={{ fontSize: 14, marginBottom: 10, borderBottom: '1px solid var(--rule)', paddingBottom: '6px' }}>Cheques due in {month}</h3>
+            {calendar.length === 0 ? (
+              <div className="empty" style={{ padding: 16 }}>No cheques due this month.</div>
+            ) : (
+              <div className="due-items-list">
+                {calendar.map(c => (
+                  <div key={c.id} className="due-item-card">
+                    <div className="due-item-header">
+                      <span className="mono" style={{ fontWeight: 600 }}>Due: {c.due_date}</span>
+                      <Stamp status={c.status} />
+                    </div>
+                    <div className="due-item-body">
+                      <div>Cheque: <ChequeNo>{c.cheque_number}</ChequeNo></div>
+                      <div>Supplier: <strong>{c.supplier_name}</strong></div>
+                      <div style={{ gridColumn: 'span 2', marginTop: 4 }}>
+                        Amount: <Money value={c.amount} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         <div className="card">
           <div className="card-pad" style={{ borderBottom: '1px solid var(--rule)' }}><h2 style={{ fontSize: 16 }}>Spending per supplier · {month}</h2></div>
-          <div className="table-wrap">
+          <div className="table-wrap responsive-table">
             <table>
               <thead><tr><th>Supplier</th><th className="num">Total spent</th></tr></thead>
               <tbody>
                 {summary.spendBySupplier.length === 0 && <tr><td colSpan={2} className="empty">No purchases this month.</td></tr>}
-                {summary.spendBySupplier.map(r => <tr key={r.id}><td>{r.name}</td><td className="num"><Money value={r.total} /></td></tr>)}
+                {summary.spendBySupplier.map(r => (
+                  <tr key={r.id}>
+                    <td data-label="Supplier">{r.name}</td>
+                    <td className="num" data-label="Total spent"><Money value={r.total} /></td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
