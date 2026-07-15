@@ -1,11 +1,10 @@
-import { getAuthUser } from '@/lib/auth'
+import { createClient } from '@supabase/supabase-js'
 import { exportPdf } from '@/lib/services/reportService'
 import { PassThrough } from 'stream'
 
 export async function GET(request) {
   try {
-    const { user, supabase } = await getAuthUser(request)
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
     const { searchParams } = new URL(request.url)
     const month = searchParams.get('month')

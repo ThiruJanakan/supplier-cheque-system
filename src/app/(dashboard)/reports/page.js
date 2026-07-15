@@ -125,8 +125,8 @@ export default function Reports() {
           <Calendar month={month} items={calendar} />
 
           {/* Mobile-only list of due cheques */}
-          <div className="mobile-due-list" style={{ marginTop: 20 }}>
-            <h3 style={{ fontSize: 14, marginBottom: 10, borderBottom: '1px solid var(--rule)', paddingBottom: '6px' }}>Cheques due in {month}</h3>
+          <div className="mobile-due-list">
+            <h3 style={{ fontSize: 14, marginBottom: 12, borderBottom: '1px solid var(--rule)', paddingBottom: '6px' }}>Cheques due in {month}</h3>
             {calendar.length === 0 ? (
               <div className="empty" style={{ padding: 16 }}>No cheques due this month.</div>
             ) : (
@@ -138,10 +138,17 @@ export default function Reports() {
                       <Stamp status={c.status} />
                     </div>
                     <div className="due-item-body">
-                      <div>Cheque: <ChequeNo>{c.cheque_number}</ChequeNo></div>
-                      <div>Supplier: <strong>{c.supplier_name}</strong></div>
-                      <div style={{ gridColumn: 'span 2', marginTop: 4 }}>
-                        Amount: <Money value={c.amount} />
+                      <div>
+                        <span style={{ color: 'var(--muted)', fontSize: '11px', textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>Cheque</span>
+                        <ChequeNo>{c.cheque_number}</ChequeNo>
+                      </div>
+                      <div>
+                        <span style={{ color: 'var(--muted)', fontSize: '11px', textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>Supplier</span>
+                        <strong>{c.supplier_name}</strong>
+                      </div>
+                      <div style={{ marginTop: 4, borderTop: '1px solid var(--paper)', paddingTop: 6 }}>
+                        <span style={{ color: 'var(--muted)', fontSize: '11px', textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>Amount</span>
+                        <span style={{ fontWeight: 700 }}><Money value={c.amount} /></span>
                       </div>
                     </div>
                   </div>

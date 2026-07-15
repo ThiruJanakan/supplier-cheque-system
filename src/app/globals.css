@@ -510,6 +510,54 @@ input:focus, select:focus, textarea:focus { border-color: var(--banker); outline
     font-weight: 700;
     font-size: 14.5px;
   }
+  
+  /* ---- mobile calendar due cheques list ---- */
+  .mobile-due-list {
+    display: block;
+    margin-top: 24px;
+  }
+  .due-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .due-item-card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 12px 14px;
+    box-shadow: var(--shadow);
+  }
+  .due-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px dashed var(--rule);
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    font-size: 12.5px;
+  }
+  .due-item-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 13.5px;
+  }
+  .due-item-body > div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--ink);
+  }
+  .due-item-body strong {
+    font-weight: 600;
+  }
 }
+
+/* Hide mobile due list by default on desktop */
+.mobile-due-list {
+  display: none;
+}
+
 
 
