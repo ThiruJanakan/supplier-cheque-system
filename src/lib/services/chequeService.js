@@ -49,6 +49,9 @@ async function validate(supabase, d, existingId = null) {
     issue_date: d.issue_date,
     due_date: d.due_date,
     bank_name: d.bank_name || null,
+    bank_account_no: d.bank_account_no || null,
+    branch_name: d.branch_name || null,
+    branch_code: d.branch_code || null,
     notes: d.notes || null,
   };
 }

@@ -1,8 +1,10 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Field } from '@/components/ui';
 import { createClient } from '@/lib/supabase/client';
+
+const supabase = createClient();
 
 export default function ResetPassword() {
   const router = useRouter();
@@ -11,6 +13,15 @@ export default function ResetPassword() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    // Check if recovery session is active
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data.session) {
+        setError('No active recovery session detected. Please request a new reset link from the login page.');
+      }
+    });
+  }, []);
 
   const handleUpdatePassword = async e => {
     e.preventDefault();
@@ -21,9 +32,12 @@ export default function ResetPassword() {
 
     setBusy(true); setError(''); setNotice('');
     try {
-      const supabase = createClient();
       const { error: updateError } = await supabase.auth.updateUser({ password });
       if (updateError) throw updateError;
+      
+      // Clean up the recovery session
+      await supabase.auth.signOut();
+      
       setNotice('Password updated successfully! Redirecting to login...');
       setTimeout(() => {
         router.push('/login');
@@ -43,7 +57,7 @@ export default function ResetPassword() {
         {error && <div className="alert-error">{error}</div>}
         {notice && <div className="alert-ok">{notice}</div>}
         
-        {!notice && (
+        {!notice && !error.includes('No active recovery session') && (
           <>
             <Field label="New Password (min 8 characters)">
               <div style={{ position: 'relative' }}>

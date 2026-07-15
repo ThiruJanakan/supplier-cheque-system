@@ -4,7 +4,7 @@ import { api } from '@/api/client';
 import Modal from '@/components/Modal';
 import { Money, Field } from '@/components/ui';
 
-const blank = { name: '', contact_person: '', phone: '', email: '', address: '', bank_name: '', notes: '' };
+const blank = { name: '', contact_person: '', phone: '', email: '', address: '', bank_name: '', bank_account_no: '', branch_name: '', branch_code: '', notes: '' };
 
 export default function Suppliers() {
   const [rows, setRows] = useState([]);
@@ -47,7 +47,7 @@ export default function Suppliers() {
       </div>
       <div className="card table-wrap">
         <table>
-          <thead><tr><th>Name</th><th>Contact</th><th>Phone</th><th>Bank</th><th className="num">Purchases</th><th className="num">Cheques issued</th><th></th></tr></thead>
+          <thead><tr><th>Name</th><th>Contact</th><th>Phone</th><th>Bank account details</th><th className="num">Purchases</th><th className="num">Cheques issued</th><th></th></tr></thead>
           <tbody>
             {rows.length === 0 && <tr><td colSpan={7} className="empty">No suppliers yet. Add your first supplier to start recording purchases.</td></tr>}
             {rows.map(s => (
@@ -55,7 +55,16 @@ export default function Suppliers() {
                 <td><strong>{s.name}</strong></td>
                 <td>{s.contact_person || <span className="muted">—</span>}</td>
                 <td className="mono">{s.phone || '—'}</td>
-                <td>{s.bank_name || <span className="muted">—</span>}</td>
+                <td>
+                  {s.bank_name ? (
+                    <div>
+                      <div><strong>{s.bank_name}</strong></div>
+                      <div className="muted mono" style={{ fontSize: 11 }}>
+                        Acc: {s.bank_account_no || '—'} {s.branch_name ? `· ${s.branch_name}` : ''} {s.branch_code ? `(${s.branch_code})` : ''}
+                      </div>
+                    </div>
+                  ) : <span className="muted">—</span>}
+                </td>
                 <td className="num"><Money value={s.total_purchases} /></td>
                 <td className="num"><Money value={s.total_cheques} /></td>
                 <td style={{ whiteSpace: 'nowrap' }}>
@@ -77,9 +86,16 @@ export default function Suppliers() {
             <Field label="Contact person"><input value={editing.contact_person || ''} onChange={e => setEditing({ ...editing, contact_person: e.target.value })} /></Field>
             <Field label="Phone"><input value={editing.phone || ''} onChange={e => setEditing({ ...editing, phone: e.target.value })} /></Field>
             <Field label="Email"><input value={editing.email || ''} onChange={e => setEditing({ ...editing, email: e.target.value })} /></Field>
-            <Field label="Bank"><input value={editing.bank_name || ''} onChange={e => setEditing({ ...editing, bank_name: e.target.value })} /></Field>
+            <Field label="Address"><input value={editing.address || ''} onChange={e => setEditing({ ...editing, address: e.target.value })} /></Field>
           </div>
-          <Field label="Address"><input value={editing.address || ''} onChange={e => setEditing({ ...editing, address: e.target.value })} /></Field>
+          
+          <h3 style={{ fontSize: 14, margin: '14px 0 8px', borderBottom: '1px solid var(--rule)', paddingBottom: '4px' }}>Bank Account details</h3>
+          <div className="grid cols-2">
+            <Field label="Bank name"><input value={editing.bank_name || ''} onChange={e => setEditing({ ...editing, bank_name: e.target.value })} /></Field>
+            <Field label="Bank account number"><input value={editing.bank_account_no || ''} onChange={e => setEditing({ ...editing, bank_account_no: e.target.value })} /></Field>
+            <Field label="Branch name"><input value={editing.branch_name || ''} onChange={e => setEditing({ ...editing, branch_name: e.target.value })} /></Field>
+            <Field label="Branch number / code"><input value={editing.branch_code || ''} onChange={e => setEditing({ ...editing, branch_code: e.target.value })} /></Field>
+          </div>
           <Field label="Notes"><textarea rows={2} value={editing.notes || ''} onChange={e => setEditing({ ...editing, notes: e.target.value })} /></Field>
         </Modal>
       )}

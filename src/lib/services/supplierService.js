@@ -8,6 +8,9 @@ function normalise(d) {
     email: d.email || null,
     address: d.address || null,
     bank_name: d.bank_name || null,
+    bank_account_no: d.bank_account_no || null,
+    branch_name: d.branch_name || null,
+    branch_code: d.branch_code || null,
     notes: d.notes || null,
   };
 }

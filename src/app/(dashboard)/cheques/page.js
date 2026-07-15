@@ -5,7 +5,7 @@ import Modal from '@/components/Modal';
 import { Money, Stamp, ChequeNo, Field } from '@/components/ui';
 
 const today = () => new Date().toISOString().slice(0, 10);
-const blank = { cheque_number: '', supplier_id: '', amount: '', issue_date: today(), due_date: '', bank_name: '', notes: '', allocations: [] };
+const blank = { cheque_number: '', supplier_id: '', amount: '', issue_date: today(), due_date: '', bank_name: '', bank_account_no: '', branch_name: '', branch_code: '', notes: '', allocations: [] };
 const STATUSES = ['issued', 'pending', 'partially_paid', 'cleared', 'bounced', 'cancelled'];
 const NEXT = {
   issued: ['pending', 'partially_paid', 'cleared', 'bounced', 'cancelled'],
@@ -133,9 +133,16 @@ export default function Cheques() {
               </select>
             </Field>
             <Field label="Amount *"><input type="number" min="0" step="0.01" value={editing.amount} onChange={e => setEditing({ ...editing, amount: e.target.value })} /></Field>
-            <Field label="Bank"><input value={editing.bank_name || ''} onChange={e => setEditing({ ...editing, bank_name: e.target.value })} /></Field>
             <Field label="Issue date *"><input type="date" value={editing.issue_date} onChange={e => setEditing({ ...editing, issue_date: e.target.value })} /></Field>
             <Field label="Due date *"><input type="date" value={editing.due_date} onChange={e => setEditing({ ...editing, due_date: e.target.value })} /></Field>
+          </div>
+          
+          <h3 style={{ fontSize: 14, margin: '14px 0 8px', borderBottom: '1px solid var(--rule)', paddingBottom: '4px' }}>Drawing Bank details</h3>
+          <div className="grid cols-2">
+            <Field label="Drawing bank name"><input value={editing.bank_name || ''} onChange={e => setEditing({ ...editing, bank_name: e.target.value })} /></Field>
+            <Field label="Bank account number"><input value={editing.bank_account_no || ''} onChange={e => setEditing({ ...editing, bank_account_no: e.target.value })} /></Field>
+            <Field label="Branch name"><input value={editing.branch_name || ''} onChange={e => setEditing({ ...editing, branch_name: e.target.value })} /></Field>
+            <Field label="Branch number / code"><input value={editing.branch_code || ''} onChange={e => setEditing({ ...editing, branch_code: e.target.value })} /></Field>
           </div>
           <Field label="Notes"><input value={editing.notes || ''} onChange={e => setEditing({ ...editing, notes: e.target.value })} /></Field>
 
