@@ -7,7 +7,7 @@ export async function POST(request) {
       return Response.json({ error: 'Username and password are required.' }, { status: 400 })
     }
 
-    const email = username.includes('@') ? username : `${username}@cheque-manager.local`
+    const email = username === 'admin' ? 'Thirujanakan@gmail.com' : (username.includes('@') ? username : `${username}@cheque-manager.local`);
     const supabase = await createClient()
 
     // 1. Attempt login
