@@ -5,6 +5,7 @@ import { Money, Stamp, ChequeNo } from '@/components/ui';
 import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from 'recharts';
+import { jsPDF } from 'jspdf';
 
 const thisMonth = new Date().toISOString().slice(0, 7);
 
@@ -70,6 +71,92 @@ export default function Reports() {
   if (!summary) return <div className="empty">Loading…</div>;
   const cs = summary.chequeStats;
 
+  const handleExportPdf = () => {
+    try {
+      const doc = new jsPDF();
+      const currency = 'LKR'; // Default currency label
+      const fmt = n => `${currency} ${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+
+      // Title
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(20);
+      doc.text(`Monthly Report — ${month}`, 15, 20);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(`Generated ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`, 15, 27);
+      doc.setTextColor(0);
+
+      // Summary
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.text('Summary', 15, 40);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      const summaryLines = [
+        `Total supplier spending: ${fmt(summary.spendTotal)}`,
+        `Total sales revenue deposited to savings: ${fmt(summary.revenueTotal)}`,
+        `Cheques issued: ${cs.total_issued}`,
+        `Pending clearance: ${cs.pending_clearance}`,
+        `Cleared: ${cs.cleared}`,
+        `Bounced: ${cs.bounced}`,
+      ];
+      
+      let y = 48;
+      summaryLines.forEach(line => {
+        doc.text(line, 15, y);
+        y += 7;
+      });
+
+      // Spending by supplier
+      y += 5;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.text('Spending by Supplier', 15, y);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      y += 8;
+
+      if (summary.spendBySupplier.length === 0) {
+        doc.text('No purchases recorded this month.', 15, y);
+        y += 7;
+      } else {
+        summary.spendBySupplier.forEach(r => {
+          doc.text(`${r.name}: ${fmt(r.total)}`, 15, y);
+          y += 7;
+        });
+      }
+
+      // Upcoming cheques
+      y += 5;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.text('Upcoming Cheque Due Dates', 15, y);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      y += 8;
+
+      if (calendar.length === 0) {
+        doc.text('No pending cheques.', 15, y);
+      } else {
+        calendar.forEach(c => {
+          if (y > 275) {
+            doc.addPage();
+            y = 20;
+          }
+          doc.text(`${c.due_date}  ·  #${c.cheque_number}  ·  ${c.supplier_name}  ·  ${fmt(c.amount)}  ·  ${c.status.toUpperCase()}`, 15, y);
+          y += 7;
+        });
+      }
+
+      doc.save(`report-${month}.pdf`);
+    } catch (err) {
+      alert('Failed to generate PDF: ' + err.message);
+    }
+  };
+
   return (
     <>
       <div className="page-head">
@@ -77,7 +164,7 @@ export default function Reports() {
         <div style={{ display: 'flex', gap: 10 }}>
           <input type="month" value={month} onChange={e => setMonth(e.target.value)} />
           <button className="btn ghost" onClick={() => api.download('/reports/export/excel', { month }, `report-${month}.xlsx`)}>Export Excel</button>
-          <button className="btn ghost" onClick={() => api.download('/reports/export/pdf', { month }, `report-${month}.pdf`)}>Export PDF</button>
+          <button className="btn ghost" onClick={handleExportPdf}>Export PDF</button>
         </div>
       </div>
 
