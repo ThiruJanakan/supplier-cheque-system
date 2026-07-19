@@ -41,7 +41,7 @@ export default function Purchases() {
   };
 
   // Credit-period select handling for the modal
-  const periodValue = editing && (editing.credit_period_days === '' || editing.credit_period_days == null)
+  const periodValue = !editing || editing.credit_period_days === '' || editing.credit_period_days == null
     ? ''
     : (PRESETS.includes(Number(editing.credit_period_days)) ? String(Number(editing.credit_period_days)) : 'other');
 
