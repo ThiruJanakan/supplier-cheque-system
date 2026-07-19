@@ -11,8 +11,9 @@ export async function GET(request) {
     const from = searchParams.get('from') || undefined
     const to = searchParams.get('to') || undefined
     const search = searchParams.get('search') || undefined
+    const pendingOnly = searchParams.get('pending') === '1' || searchParams.get('pending') === 'true'
 
-    const purchases = await listPurchases(supabase, { supplierId, from, to, search })
+    const purchases = await listPurchases(supabase, { supplierId, from, to, search, pendingOnly })
     return Response.json(purchases)
   } catch (e) {
     return Response.json({ error: e.message }, { status: 500 })

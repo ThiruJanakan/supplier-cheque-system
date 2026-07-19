@@ -7,7 +7,7 @@ import { Loader } from '@/components/ui';
 
 const nav = [
   { section: 'Operations', links: [
-    ['/', 'Dashboard'], ['/suppliers', 'Suppliers'], ['/purchases', 'Purchases'], ['/cheques', 'Cheques'],
+    ['/', 'Dashboard'], ['/suppliers', 'Suppliers'], ['/purchases', 'Purchases'], ['/credit', 'Credit dues'], ['/cheques', 'Cheques'],
   ]},
   { section: 'Finance', links: [
     ['/revenue', 'Sales & savings'], ['/reports', 'Reports'],
@@ -25,7 +25,8 @@ function DashboardLayoutContent({ children }) {
 
   useEffect(() => {
     if (!loading && !isAuthed) {
-      router.push('/login');
+      const next = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/';
+      router.push(next && next !== '/' ? `/login?next=${encodeURIComponent(next)}` : '/login');
     }
   }, [isAuthed, loading, router]);
 

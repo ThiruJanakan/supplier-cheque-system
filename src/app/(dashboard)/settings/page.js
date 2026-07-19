@@ -55,6 +55,12 @@ export default function Settings() {
           <Field label="Currency label">
             <input value={settings.currency || ''} onChange={e => setSettings({ ...settings, currency: e.target.value })} />
           </Field>
+          <Field label="Purchase due reminder (days before due date)">
+            <input value={settings.purchase_alert_days || ''} onChange={e => setSettings({ ...settings, purchase_alert_days: e.target.value })} placeholder="2" />
+          </Field>
+          <Field label="App base URL (used for SMS links)">
+            <input value={settings.app_base_url || ''} onChange={e => setSettings({ ...settings, app_base_url: e.target.value })} placeholder="https://your-app.example.com" />
+          </Field>
           <button className="btn primary" onClick={saveSettings}>Save settings</button>
         </div>
 

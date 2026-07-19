@@ -20,9 +20,10 @@ export default function Login() {
   const submit = async e => {
     e.preventDefault();
     setBusy(true); setError('');
-    try { 
-      await login(username, password); 
-      router.push('/'); 
+    try {
+      await login(username, password);
+      const next = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('next') : null;
+      router.push(next && next.startsWith('/') ? next : '/');
     }
     catch (err) { 
       setError(err.message); 

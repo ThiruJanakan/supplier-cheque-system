@@ -25,6 +25,12 @@ export default function Suppliers() {
     } catch (e) { setError(e.message); }
   };
 
+  const downloadPdf = async () => {
+    setError('');
+    try { await api.download('/suppliers/export/pdf', {}, `suppliers_${new Date().toISOString().slice(0, 10)}.pdf`); }
+    catch (e) { setError(e.message); }
+  };
+
   const remove = async s => {
     if (!confirm(`Delete "${s.name}"? Suppliers with purchase or cheque history are archived instead of removed.`)) return;
     try {
@@ -38,7 +44,10 @@ export default function Suppliers() {
     <>
       <div className="page-head">
         <div><h1>Suppliers</h1><div className="sub">{rows.length} active suppliers</div></div>
-        <button className="btn primary" onClick={() => setEditing({ ...blank })}>Add supplier</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn ghost" onClick={downloadPdf}>Download PDF</button>
+          <button className="btn primary" onClick={() => setEditing({ ...blank })}>Add supplier</button>
+        </div>
       </div>
       {error && <div className="alert-error">{error}</div>}
       {notice && <div className="alert-ok">{notice}</div>}

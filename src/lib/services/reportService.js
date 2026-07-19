@@ -2,6 +2,8 @@ import ExcelJS from 'exceljs';
 import PDFDocument from 'pdfkit';
 import { getSetting } from './settingsService';
 import { listCheques } from './chequeService';
+import { listSuppliers } from './supplierService';
+import { listPurchases } from './purchaseService';
 
 function monthRange(month) {
   if (!/^\d{4}-\d{2}$/.test(month)) throw new Error('Month must be in YYYY-MM format.');
@@ -236,6 +238,138 @@ export async function exportPdf(supabase, month, stream) {
   doc.moveDown(0.4).fontSize(10);
   if (!data.upcoming.length) doc.text('No pending cheques.');
   data.upcoming.forEach(c => doc.text(`${c.due_date}  ·  #${c.cheque_number}  ·  ${c.supplier_name}  ·  ${fmt(c.amount)}  ·  ${c.status}`));
+
+  doc.end();
+}
+
+// ============================================================
+// Suppliers directory PDF (contact, bank & credit summary)
+// ============================================================
+export async function exportSuppliersPdf(supabase, stream) {
+  const currency = await getSetting(supabase, 'currency') || 'LKR';
+  const fmt = n => `${currency} ${Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const [suppliers, purchases] = await Promise.all([
+    listSuppliers(supabase, {}),
+    listPurchases(supabase, {}),
+  ]);
+
+  // Aggregate purchase totals per supplier.
+  const agg = {};
+  for (const p of purchases) {
+    const a = agg[p.supplier_id] || (agg[p.supplier_id] = { total: 0, paid: 0, outstanding: 0, openDues: 0 });
+    a.total += Number(p.total_amount);
+    a.paid += Number(p.paid_amount);
+    a.outstanding += Number(p.outstanding);
+    if (Number(p.outstanding) > 0.005) a.openDues += 1;
+  }
+
+  const grand = suppliers.reduce((acc, s) => {
+    const a = agg[s.id] || {};
+    acc.total += a.total || 0;
+    acc.paid += a.paid || 0;
+    acc.outstanding += a.outstanding || 0;
+    return acc;
+  }, { total: 0, paid: 0, outstanding: 0 });
+
+  const BRAND = '#0f5132';
+  const INK = '#1f2937';
+  const MUTED = '#6b7280';
+  const LINE = '#e5e7eb';
+  const SHADE = '#f3f6f4';
+
+  const doc = new PDFDocument({ margin: 48, size: 'A4' });
+  doc.pipe(stream);
+
+  const left = doc.page.margins.left;
+  const right = doc.page.width - doc.page.margins.right;
+  const width = right - left;
+
+  // ---- Title band ----
+  doc.rect(0, 0, doc.page.width, 96).fill(BRAND);
+  doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(20)
+     .text('Supplier Directory', left, 30);
+  doc.font('Helvetica').fontSize(10).fillColor('#d1e7dd')
+     .text('Contact, bank details & outstanding credit', left, 58);
+  doc.fontSize(9).fillColor('#d1e7dd')
+     .text(`Generated ${new Date().toISOString().slice(0, 16).replace('T', ' ')} · ${suppliers.length} active suppliers`, left, 74);
+
+  let y = 120;
+
+  // ---- Portfolio summary strip ----
+  const cards = [
+    ['Total purchased', fmt(grand.total)],
+    ['Total paid', fmt(grand.paid)],
+    ['Total outstanding', fmt(grand.outstanding)],
+  ];
+  const cardW = (width - 16) / 3;
+  cards.forEach(([label, value], i) => {
+    const x = left + i * (cardW + 8);
+    doc.roundedRect(x, y, cardW, 46, 6).fill(SHADE);
+    doc.fillColor(MUTED).font('Helvetica').fontSize(8).text(label.toUpperCase(), x + 10, y + 9, { width: cardW - 20 });
+    doc.fillColor(i === 2 ? '#b42318' : INK).font('Helvetica-Bold').fontSize(13).text(value, x + 10, y + 22, { width: cardW - 20 });
+  });
+  y += 66;
+
+  const ensureSpace = needed => {
+    if (y + needed > doc.page.height - doc.page.margins.bottom) {
+      doc.addPage();
+      y = doc.page.margins.top;
+    }
+  };
+
+  const label = (t, x, yy) => doc.fillColor(MUTED).font('Helvetica').fontSize(8).text(t.toUpperCase(), x, yy);
+  const value = (t, x, yy, w) => doc.fillColor(INK).font('Helvetica').fontSize(10).text(t || '—', x, yy + 10, { width: w });
+
+  if (!suppliers.length) {
+    doc.fillColor(MUTED).font('Helvetica').fontSize(11).text('No active suppliers on record.', left, y);
+    doc.end();
+    return;
+  }
+
+  suppliers.forEach((s, idx) => {
+    const a = agg[s.id] || { total: 0, paid: 0, outstanding: 0, openDues: 0 };
+    const blockH = 150;
+    ensureSpace(blockH + 12);
+
+    const top = y;
+    // Card container
+    doc.roundedRect(left, top, width, blockH, 8).fillAndStroke('#ffffff', LINE);
+
+    // Header row
+    doc.rect(left, top, width, 28).fill(idx % 2 === 0 ? SHADE : '#eef2f0');
+    doc.roundedRect(left, top, width, blockH, 8).stroke(LINE);
+    doc.fillColor(BRAND).font('Helvetica-Bold').fontSize(12).text(s.name, left + 12, top + 8, { width: width - 160 });
+    // Outstanding pill on the right of header
+    const pill = a.outstanding > 0.005 ? fmt(a.outstanding) + ' due' : 'Settled';
+    doc.fillColor(a.outstanding > 0.005 ? '#b42318' : BRAND).font('Helvetica-Bold').fontSize(9)
+       .text(pill, right - 160, top + 9, { width: 148, align: 'right' });
+
+    // Two-column details
+    const colX1 = left + 12;
+    const colX2 = left + width / 2 + 6;
+    const colW = width / 2 - 24;
+    let ry = top + 38;
+
+    label('Contact', colX1, ry); value(s.contact_person, colX1, ry, colW);
+    label('Bank', colX2, ry); value(s.bank_name, colX2, ry, colW);
+    ry += 30;
+    label('Phone', colX1, ry); value(s.phone, colX1, ry, colW);
+    label('Account no', colX2, ry);
+    value([s.bank_account_no, s.branch_name, s.branch_code].filter(Boolean).join(' · '), colX2, ry, colW);
+    ry += 30;
+    label('Email', colX1, ry); value(s.email, colX1, ry, colW);
+    label('Address', colX2, ry); value(s.address, colX2, ry, colW);
+
+    // Credit summary footer line
+    const fy = top + blockH - 22;
+    doc.moveTo(left + 12, fy - 6).lineTo(right - 12, fy - 6).strokeColor(LINE).stroke();
+    doc.font('Helvetica').fontSize(9).fillColor(MUTED)
+       .text(`Purchased ${fmt(a.total)}   ·   Paid ${fmt(a.paid)}   ·   Outstanding ${fmt(a.outstanding)}   ·   Open dues ${a.openDues}`,
+             left + 12, fy, { width: width - 24 });
+
+    y = top + blockH + 12;
+  });
 
   doc.end();
 }
