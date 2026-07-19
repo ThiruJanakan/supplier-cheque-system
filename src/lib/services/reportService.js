@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs';
 import PDFDocument from 'pdfkit';
+import path from 'path';
 import { getSetting } from './settingsService';
 import { listCheques } from './chequeService';
 import { listSuppliers } from './supplierService';
@@ -210,6 +211,8 @@ export async function exportPdf(supabase, month, stream) {
   const fmt = n => `${currency} ${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
   
   const doc = new PDFDocument({ margin: 48 });
+  doc.registerFont('Helvetica', path.join(process.cwd(), 'node_modules/pdfkit/js/data/Helvetica.afm'));
+  doc.registerFont('Helvetica-Bold', path.join(process.cwd(), 'node_modules/pdfkit/js/data/Helvetica-Bold.afm'));
   doc.pipe(stream);
 
   doc.fontSize(18).text(`Monthly Report — ${month}`, { underline: false });
@@ -279,6 +282,8 @@ export async function exportSuppliersPdf(supabase, stream) {
   const SHADE = '#f3f6f4';
 
   const doc = new PDFDocument({ margin: 48, size: 'A4' });
+  doc.registerFont('Helvetica', path.join(process.cwd(), 'node_modules/pdfkit/js/data/Helvetica.afm'));
+  doc.registerFont('Helvetica-Bold', path.join(process.cwd(), 'node_modules/pdfkit/js/data/Helvetica-Bold.afm'));
   doc.pipe(stream);
 
   const left = doc.page.margins.left;
