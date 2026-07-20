@@ -4,6 +4,23 @@ import { api } from '@/api/client';
 
 const CATS = ['due_7', 'due_3', 'due_1', 'overdue', 'cleared', 'bounced', 'test'];
 
+function formatLocalTime(utcString) {
+  if (!utcString) return '—';
+  try {
+    const d = new Date(utcString);
+    if (isNaN(d.getTime())) return utcString;
+    const Y = d.getFullYear();
+    const M = String(d.getMonth() + 1).padStart(2, '0');
+    const D = String(d.getDate()).padStart(2, '0');
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    const s = String(d.getSeconds()).padStart(2, '0');
+    return `${Y}-${M}-${D} ${h}:${m}:${s}`;
+  } catch (e) {
+    return utcString;
+  }
+}
+
 export default function SmsLog() {
   const [rows, setRows] = useState([]);
   const [category, setCategory] = useState('');
@@ -48,7 +65,7 @@ export default function SmsLog() {
             {rows.length === 0 && <tr><td colSpan={5} className="empty">No messages sent yet. Alerts run automatically every morning.</td></tr>}
             {rows.map(l => (
               <tr key={l.id}>
-                <td className="mono" data-label="Sent at" style={{ fontSize: 12 }}>{l.sent_at}</td>
+                <td className="mono" data-label="Sent at" style={{ fontSize: 12 }}>{formatLocalTime(l.sent_at)}</td>
                 <td className="mono" data-label="Category">{l.category}</td>
                 <td className="mono" data-label="Recipient">{l.recipient}</td>
                 <td data-label="Message" style={{ maxWidth: 420 }}>{l.message}{l.error && <div className="muted" style={{ color: 'var(--claret)' }}>{l.error}</div>}</td>

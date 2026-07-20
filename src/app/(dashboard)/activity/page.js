@@ -2,6 +2,23 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/api/client';
 
+function formatLocalTime(utcString) {
+  if (!utcString) return '—';
+  try {
+    const d = new Date(utcString);
+    if (isNaN(d.getTime())) return utcString;
+    const Y = d.getFullYear();
+    const M = String(d.getMonth() + 1).padStart(2, '0');
+    const D = String(d.getDate()).padStart(2, '0');
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    const s = String(d.getSeconds()).padStart(2, '0');
+    return `${Y}-${M}-${D} ${h}:${m}:${s}`;
+  } catch (e) {
+    return utcString;
+  }
+}
+
 export default function ActivityLog() {
   const [rows, setRows] = useState([]);
   const [type, setType] = useState('');
@@ -30,7 +47,7 @@ export default function ActivityLog() {
             {rows.length === 0 && <tr><td colSpan={5} className="empty">No activity recorded yet.</td></tr>}
             {rows.map(a => (
               <tr key={a.id}>
-                <td className="mono" data-label="When" style={{ fontSize: 12 }}>{a.created_at}</td>
+                <td className="mono" data-label="When" style={{ fontSize: 12 }}>{formatLocalTime(a.created_at)}</td>
                 <td data-label="User">{a.username || '—'}</td>
                 <td className="mono" data-label="Action">{a.action}</td>
                 <td data-label="Entity">{a.entity_type}{a.entity_id ? ` #${a.entity_id}` : ''}</td>

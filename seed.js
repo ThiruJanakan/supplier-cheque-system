@@ -52,8 +52,8 @@ async function seed() {
     await supabase.from('cheques').delete().neq('id', 0);
     await supabase.from('purchases').delete().neq('id', 0);
     await supabase.from('suppliers').delete().neq('id', 0);
-    await supabase.from('savings_ledger').delete().neq('id', 0);
-    await supabase.from('revenue').delete().neq('id', 0);
+    await supabase.from('savings_transactions').delete().neq('id', 0);
+    await supabase.from('revenue_entries').delete().neq('id', 0);
     await supabase.from('sms_logs').delete().neq('id', 0);
     await supabase.from('activity_logs').delete().neq('id', 0);
 
@@ -224,7 +224,7 @@ async function seed() {
 
     // 6. Seed Savings Account Ledger
     console.log("Seeding savings ledger...");
-    await supabase.from('savings_ledger').insert([
+    await supabase.from('savings_transactions').insert([
       {
         entry_date: daysAgo(15),
         type: "deposit",
@@ -251,7 +251,7 @@ async function seed() {
 
     // 7. Seed Daily Revenue Entries
     console.log("Seeding daily revenue sales records...");
-    await supabase.from('revenue').insert([
+    await supabase.from('revenue_entries').insert([
       {
         entry_date: daysAgo(3),
         amount: 120000.00,

@@ -29,8 +29,7 @@ export async function GET(request) {
       return {
         ...lCopy,
         cheque_number,
-        // Format for consistent front-end styling
-        sent_at: new Date(l.sent_at).toISOString().replace('T', ' ').substring(0, 19),
+        sent_at: l.sent_at,
       }
     })
 

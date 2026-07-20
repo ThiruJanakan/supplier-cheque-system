@@ -32,8 +32,7 @@ export async function listActivity(supabase, { entityType, limit = 300 } = {}) {
   return data.map(row => {
     return {
       ...row,
-      // Format timestamps for frontend display consistency
-      created_at: new Date(row.created_at).toISOString().replace('T', ' ').substring(0, 19),
+      created_at: row.created_at,
     };
   });
 }
