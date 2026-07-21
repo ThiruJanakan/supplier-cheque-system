@@ -6,6 +6,7 @@ import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from 'recharts';
 import { jsPDF } from 'jspdf';
+import { useUI } from '@/context/UIContext';
 
 const thisMonth = new Date().toISOString().slice(0, 7);
 
@@ -54,6 +55,7 @@ function Calendar({ month, items }) {
 }
 
 export default function Reports() {
+  const { toast } = useUI();
   const [month, setMonth] = useState(thisMonth);
   const [summary, setSummary] = useState(null);
   const [trends, setTrends] = useState([]);
@@ -330,7 +332,7 @@ export default function Reports() {
 
       doc.save(`report-${month}.pdf`);
     } catch (err) {
-      alert('Failed to generate PDF: ' + err.message);
+      toast.error('Failed to generate PDF: ' + err.message);
     }
   };
 

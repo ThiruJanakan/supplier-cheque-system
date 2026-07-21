@@ -2,40 +2,46 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/api/client';
 import { Money, Field } from '@/components/ui';
+import { useUI } from '@/context/UIContext';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
 export default function Revenue() {
+  const { toast, confirm } = useUI();
   const [entries, setEntries] = useState([]);
   const [account, setAccount] = useState(null);
   const [form, setForm] = useState({ entry_date: today(), amount: '', notes: '' });
   const [exportMonth, setExportMonth] = useState(today().slice(0, 7));
-  const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
 
   const downloadExcel = async () => {
-    setError('');
     try { await api.download('/revenue/export/excel', { month: exportMonth }, `sales_revenue_${exportMonth}.xlsx`); }
-    catch (e) { setError(e.message); }
+    catch (e) { toast.error(e.message); }
   };
 
   const load = () => Promise.all([api.get('/revenue'), api.get('/savings/account')])
-    .then(([r, a]) => { setEntries(r); setAccount(a); }).catch(e => setError(e.message));
+    .then(([r, a]) => { setEntries(r); setAccount(a); }).catch(e => toast.error(e.message));
   useEffect(() => { load(); }, []);
 
   const submit = async e => {
-    e.preventDefault(); setError(''); setNotice('');
+    e.preventDefault();
     try {
       const r = await api.post('/revenue', form);
-      setNotice(`Revenue recorded and deposited to savings. New balance: ${Number(r.balance).toLocaleString()}.`);
+      toast.success(`Revenue recorded and deposited to savings. New balance: ${Number(r.balance).toLocaleString()}.`);
       setForm({ entry_date: today(), amount: '', notes: '' });
       load();
-    } catch (err) { setError(err.message); }
+    } catch (err) { toast.error(err.message); }
   };
 
   const remove = async entry => {
-    if (!confirm(`Reverse the ${entry.entry_date} entry of ${entry.amount}? A reversal will be posted to the savings ledger.`)) return;
-    try { await api.del(`/revenue/${entry.id}`); load(); } catch (e) { setError(e.message); }
+    const confirmed = await confirm({
+      title: 'Reverse Revenue Entry',
+      message: `Reverse the ${entry.entry_date} entry of ${Number(entry.amount).toLocaleString()}? A reversal will be posted to the savings ledger.`,
+      danger: true,
+      confirmText: 'Reverse'
+    });
+    if (!confirmed) return;
+    try { await api.del(`/revenue/${entry.id}`); toast.success('Revenue entry reversed.'); load(); }
+    catch (e) { toast.error(e.message); }
   };
 
   return (
@@ -48,8 +54,6 @@ export default function Revenue() {
           <button className="btn ghost" onClick={downloadExcel}>Export Excel</button>
         </div>
       </div>
-      {error && <div className="alert-error">{error}</div>}
-      {notice && <div className="alert-ok">{notice}</div>}
 
       {account && (
         <div className="grid cols-4" style={{ marginBottom: 14 }}>
