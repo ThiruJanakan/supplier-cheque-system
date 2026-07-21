@@ -39,7 +39,10 @@ export default function SmsLog() {
     catch (e) { setError(e.message); }
   };
 
-  const badge = s => ({ delivered: 'var(--banker)', sent: 'var(--amber)', failed: 'var(--claret)' }[s]);
+  const badge = s => ({ delivered: 'var(--banker)', sent: 'var(--amber)', failed: 'var(--claret)', simulated: 'var(--muted)' }[s]);
+  // Console-mode sends (dev fallback when the SMS gateway is not configured) are
+  // logged with a "console-" provider ref and never reach a real phone.
+  const isSimulated = l => (l.provider_ref || '').startsWith('console-');
 
   return (
     <>
@@ -68,8 +71,12 @@ export default function SmsLog() {
                 <td className="mono" data-label="Sent at" style={{ fontSize: 12 }}>{formatLocalTime(l.sent_at)}</td>
                 <td className="mono" data-label="Category">{l.category}</td>
                 <td className="mono" data-label="Recipient">{l.recipient}</td>
-                <td data-label="Message" style={{ maxWidth: 420 }}>{l.message}{l.error && <div className="muted" style={{ color: 'var(--claret)' }}>{l.error}</div>}</td>
-                <td data-label="Status"><span className="mono" style={{ color: badge(l.status), fontWeight: 600, textTransform: 'uppercase', fontSize: 11 }}>{l.status}</span></td>
+                <td data-label="Message" style={{ maxWidth: 420 }}>
+                  {l.message}
+                  {l.error && <div className="muted" style={{ color: 'var(--claret)' }}>{l.error}</div>}
+                  {isSimulated(l) && <div className="muted" style={{ fontSize: 11 }}>Console mode — no real SMS was sent (SMS gateway not configured).</div>}
+                </td>
+                <td data-label="Status"><span className="mono" style={{ color: badge(isSimulated(l) ? 'simulated' : l.status), fontWeight: 600, textTransform: 'uppercase', fontSize: 11 }}>{isSimulated(l) ? 'simulated' : l.status}</span></td>
               </tr>
             ))}
           </tbody>
