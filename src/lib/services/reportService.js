@@ -1,6 +1,5 @@
 import ExcelJS from 'exceljs';
 import PDFDocument from 'pdfkit';
-import path from 'path';
 import { getSetting } from './settingsService';
 import { listCheques } from './chequeService';
 import { listSuppliers } from './supplierService';
@@ -15,16 +14,27 @@ function monthRange(month) {
 export async function monthlySummary(supabase, month) {
   const { from, to } = monthRange(month);
 
-  // 1. Spend Total
+  // 1. Spend Total & Breakdown
   const { data: purchases, error: errP } = await supabase
     .from('purchases')
-    .select('total_amount, supplier_id, suppliers(name)')
+    .select(`
+      total_amount,
+      supplier_id,
+      suppliers(name),
+      allocations:cheque_allocations(
+        allocated_amount,
+        cheque:cheques(status)
+      ),
+      payments:purchase_payments(amount)
+    `)
     .gte('purchase_date', from)
     .lte('purchase_date', to);
 
   if (errP) throw new Error(errP.message);
 
-  const spendTotal = purchases.reduce((sum, p) => sum + Number(p.total_amount), 0);
+  let spendTotal = 0;
+  let paidTotal = 0;
+  let outstandingTotal = 0;
 
   // 2. Spend by Supplier
   const supplierSpendMap = {};
@@ -34,7 +44,19 @@ export async function monthlySummary(supabase, month) {
     if (!supplierSpendMap[sId]) {
       supplierSpendMap[sId] = { id: sId, name, total: 0 };
     }
-    supplierSpendMap[sId].total += Number(p.total_amount);
+    const totalAmt = Number(p.total_amount);
+    supplierSpendMap[sId].total += totalAmt;
+
+    const paid_cheques = (p.allocations || [])
+      .filter(a => a.cheque && !['bounced', 'cancelled'].includes(a.cheque.status))
+      .reduce((sum, a) => sum + Number(a.allocated_amount), 0);
+    const paid_payments = (p.payments || []).reduce((sum, pay) => sum + Number(pay.amount), 0);
+    const paid = paid_cheques + paid_payments;
+    const outstanding = Number((totalAmt - paid).toFixed(2));
+
+    spendTotal += totalAmt;
+    paidTotal += paid;
+    outstandingTotal += outstanding;
   });
   const spendBySupplier = Object.values(supplierSpendMap).sort((a, b) => b.total - a.total);
 
@@ -89,7 +111,7 @@ export async function monthlySummary(supabase, month) {
     .filter(c => ['issued', 'pending', 'partially_paid'].includes(c.status))
     .slice(0, 30);
 
-  return { month, spendTotal, spendBySupplier, revenueTotal, chequeStats, upcoming };
+  return { month, spendTotal, paidTotal, outstandingTotal, spendBySupplier, revenueTotal, chequeStats, upcoming };
 }
 
 export async function getTrends(supabase, months = 6) {
@@ -211,8 +233,6 @@ export async function exportPdf(supabase, month, stream) {
   const fmt = n => `${currency} ${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
   
   const doc = new PDFDocument({ margin: 48 });
-  doc.registerFont('Helvetica', path.join(process.cwd(), 'node_modules/pdfkit/js/data/Helvetica.afm'));
-  doc.registerFont('Helvetica-Bold', path.join(process.cwd(), 'node_modules/pdfkit/js/data/Helvetica-Bold.afm'));
   doc.pipe(stream);
 
   doc.fontSize(18).text(`Monthly Report — ${month}`, { underline: false });
@@ -282,8 +302,6 @@ export async function exportSuppliersPdf(supabase, stream) {
   const SHADE = '#f3f6f4';
 
   const doc = new PDFDocument({ margin: 48, size: 'A4' });
-  doc.registerFont('Helvetica', path.join(process.cwd(), 'node_modules/pdfkit/js/data/Helvetica.afm'));
-  doc.registerFont('Helvetica-Bold', path.join(process.cwd(), 'node_modules/pdfkit/js/data/Helvetica-Bold.afm'));
   doc.pipe(stream);
 
   const left = doc.page.margins.left;

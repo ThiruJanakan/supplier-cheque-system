@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { api } from '@/api/client';
 import Modal from '@/components/Modal';
 import { Money, Field, MoneyInput, CreditChip, Loader } from '@/components/ui';
+import { useUI } from '@/context/UIContext';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const blankPay = { amount: '', method: 'cash', paid_on: today(), reference: '', notes: '' };
@@ -13,30 +14,44 @@ const METHOD_LABEL = { cash: 'Cash', cheque: 'Cheque', bank_transfer: 'Bank tran
 export default function PurchaseDetail() {
   const { id } = useParams();
   const router = useRouter();
+  const { toast, confirm } = useUI();
   const [p, setP] = useState(null);
-  const [error, setError] = useState('');
   const [pay, setPay] = useState(null); // null | {id?, ...}
 
-  const load = () => api.get(`/purchases/${id}`).then(setP).catch(e => setError(e.message));
+  const load = () => api.get(`/purchases/${id}`).then(setP).catch(e => toast.error(e.message));
   useEffect(() => { load(); }, [id]);
 
   const savePay = async () => {
-    setError('');
+    if (pay.method === 'cheque' && (!pay.reference || !pay.reference.trim())) {
+      toast.error('Cheque number is required for cheque payments.');
+      return;
+    }
     try {
+      const isNew = !pay.id;
       const updated = pay.id
         ? await api.put(`/purchases/${id}/payments/${pay.id}`, pay)
         : await api.post(`/purchases/${id}/payments`, pay);
-      setP(updated); setPay(null);
-    } catch (e) { setError(e.message); }
+      setP(updated); 
+      setPay(null);
+      toast.success(isNew ? 'Payment recorded successfully.' : 'Payment updated.');
+    } catch (e) { toast.error(e.message); }
   };
   const removePay = async row => {
-    if (!confirm(`Delete this ${METHOD_LABEL[row.method] || row.method} payment of ${row.amount}?`)) return;
-    try { const updated = await api.del(`/purchases/${id}/payments/${row.id}`); setP(updated); }
-    catch (e) { setError(e.message); }
+    const confirmed = await confirm({
+      title: 'Delete Payment',
+      message: `Delete this ${METHOD_LABEL[row.method] || row.method} payment of ${row.amount}?`,
+      danger: true,
+      confirmText: 'Delete'
+    });
+    if (!confirmed) return;
+    try { 
+      const updated = await api.del(`/purchases/${id}/payments/${row.id}`); 
+      setP(updated); 
+      toast.success('Payment deleted.'); 
+    } catch (e) { toast.error(e.message); }
   };
 
-  if (!p && !error) return <div style={{ marginTop: 40 }}><Loader text="Loading purchase" /></div>;
-  if (error && !p) return <div className="alert-error">{error}</div>;
+  if (!p) return <div style={{ marginTop: 40 }}><Loader text="Loading purchase" /></div>;
 
   const s = p.supplier || {};
 
@@ -54,7 +69,6 @@ export default function PurchaseDetail() {
           Record payment
         </button>
       </div>
-      {error && <div className="alert-error">{error}</div>}
 
       {/* Amount summary */}
       <div className="grid cols-3" style={{ marginBottom: 16 }}>
@@ -174,7 +188,13 @@ export default function PurchaseDetail() {
               </select>
             </Field>
             <Field label="Payment date *"><input type="date" value={pay.paid_on} onChange={e => setPay({ ...pay, paid_on: e.target.value })} /></Field>
-            <Field label="Reference"><input value={pay.reference || ''} onChange={e => setPay({ ...pay, reference: e.target.value })} placeholder="Cheque no / receipt / txn id" /></Field>
+            <Field label={pay.method === 'cheque' ? "Cheque number *" : "Reference"}>
+              <input
+                value={pay.reference || ''}
+                onChange={e => setPay({ ...pay, reference: e.target.value })}
+                placeholder={pay.method === 'cheque' ? "Enter cheque number" : "Cheque no / receipt / txn id"}
+              />
+            </Field>
           </div>
           <Field label="Notes"><textarea rows={2} value={pay.notes || ''} onChange={e => setPay({ ...pay, notes: e.target.value })} /></Field>
           <div className="muted" style={{ fontSize: 12.5 }}>Outstanding before this payment: <Money value={p.outstanding + (pay.id ? Number(p.payments.find(x => x.id === pay.id)?.amount || 0) : 0)} /></div>

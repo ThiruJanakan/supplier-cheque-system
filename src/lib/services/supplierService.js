@@ -66,8 +66,30 @@ export async function getSupplier(supabase, id) {
   return data;
 }
 
-export async function createSupplier(supabase, data, user = {}) {
+function validateSupplier(data) {
   if (!data.name || !data.name.trim()) throw new Error('Supplier name is required.');
+  if (data.phone) {
+    const cleanPhone = String(data.phone).trim();
+    if (cleanPhone && !/^\+?[0-9\s\-()]{7,20}$/.test(cleanPhone)) {
+      throw new Error('Phone number must be a valid format (7-20 digits).');
+    }
+  }
+  if (data.email) {
+    const cleanEmail = String(data.email).trim();
+    if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      throw new Error('Email address must be a valid format.');
+    }
+  }
+  if (data.bank_account_no) {
+    const cleanBankNo = String(data.bank_account_no).trim();
+    if (cleanBankNo && !/^\d+$/.test(cleanBankNo)) {
+      throw new Error('Bank account number must contain only numbers.');
+    }
+  }
+}
+
+export async function createSupplier(supabase, data, user = {}) {
+  validateSupplier(data);
   
   const norm = normalise(data);
   const { data: newSupplier, error } = await supabase
@@ -93,8 +115,7 @@ export async function createSupplier(supabase, data, user = {}) {
 export async function updateSupplier(supabase, id, data, user = {}) {
   // Ensure exists
   await getSupplier(supabase, id);
-  
-  if (!data.name || !data.name.trim()) throw new Error('Supplier name is required.');
+  validateSupplier(data);
   
   const norm = normalise(data);
   const { data: updatedSupplier, error } = await supabase

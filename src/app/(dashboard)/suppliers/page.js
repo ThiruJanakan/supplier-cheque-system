@@ -3,41 +3,71 @@ import { useEffect, useState } from 'react';
 import { api } from '@/api/client';
 import Modal from '@/components/Modal';
 import { Money, Field } from '@/components/ui';
+import { useUI } from '@/context/UIContext';
 
 const blank = { name: '', contact_person: '', phone: '', email: '', address: '', bank_name: '', bank_account_no: '', branch_name: '', branch_code: '', notes: '' };
 
 export default function Suppliers() {
+  const { toast, confirm } = useUI();
   const [rows, setRows] = useState([]);
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState(null);   // null | {id?, ...fields}
-  const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
 
-  const load = () => api.get('/suppliers', { search }).then(setRows).catch(e => setError(e.message));
+  const load = () => api.get('/suppliers', { search }).then(setRows).catch(e => toast.error(e.message));
   useEffect(() => { load(); }, [search]);
 
   const save = async () => {
-    setError('');
+    if (!editing.name || !editing.name.trim()) {
+      toast.error('Supplier name is required.');
+      return;
+    }
+    if (editing.phone) {
+      const cleanPhone = editing.phone.trim();
+      if (cleanPhone && !/^\+?[0-9\s\-()]{7,20}$/.test(cleanPhone)) {
+        toast.error('Phone number must be a valid format (7-20 digits).');
+        return;
+      }
+    }
+    if (editing.email) {
+      const cleanEmail = editing.email.trim();
+      if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+        toast.error('Email address must be a valid format.');
+        return;
+      }
+    }
+    if (editing.bank_account_no) {
+      const cleanBankNo = editing.bank_account_no.trim();
+      if (cleanBankNo && !/^\d+$/.test(cleanBankNo)) {
+        toast.error('Bank account number must contain only numbers.');
+        return;
+      }
+    }
+
     try {
       if (editing.id) await api.put(`/suppliers/${editing.id}`, editing);
       else await api.post('/suppliers', editing);
-      setEditing(null); setNotice('Supplier saved.'); load();
-    } catch (e) { setError(e.message); }
+      setEditing(null); toast.success('Supplier saved.'); load();
+    } catch (e) { toast.error(e.message); }
   };
 
   const downloadPdf = async () => {
-    setError('');
     try { await api.download('/suppliers/export/pdf', {}, `suppliers_${new Date().toISOString().slice(0, 10)}.pdf`); }
-    catch (e) { setError(e.message); }
+    catch (e) { toast.error(e.message); }
   };
 
   const remove = async s => {
-    if (!confirm(`Delete "${s.name}"? Suppliers with purchase or cheque history are archived instead of removed.`)) return;
+    const confirmed = await confirm({
+      title: 'Delete Supplier',
+      message: `Delete "${s.name}"? Suppliers with purchase or cheque history are archived instead of removed.`,
+      danger: true,
+      confirmText: 'Delete'
+    });
+    if (!confirmed) return;
     try {
       const r = await api.del(`/suppliers/${s.id}`);
-      setNotice(r.deactivated ? 'Supplier archived (has transaction history).' : 'Supplier deleted.');
+      toast.success(r.deactivated ? 'Supplier archived (has transaction history).' : 'Supplier deleted.');
       load();
-    } catch (e) { setError(e.message); }
+    } catch (e) { toast.error(e.message); }
   };
 
   return (
@@ -49,8 +79,6 @@ export default function Suppliers() {
           <button className="btn primary" onClick={() => setEditing({ ...blank })}>Add supplier</button>
         </div>
       </div>
-      {error && <div className="alert-error">{error}</div>}
-      {notice && <div className="alert-ok">{notice}</div>}
       <div className="toolbar">
         <input placeholder="Search name, contact or phone…" value={search} onChange={e => setSearch(e.target.value)} />
       </div>

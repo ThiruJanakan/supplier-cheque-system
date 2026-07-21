@@ -285,10 +285,13 @@ function validatePayment(d) {
   if (!['cash', 'cheque', 'bank_transfer'].includes(method)) {
     throw new Error('Payment method must be cash, cheque or bank_transfer.');
   }
+  if (method === 'cheque' && (!d.reference || !String(d.reference).trim())) {
+    throw new Error('Cheque number is required in the reference field.');
+  }
   return {
     amount: Number(amount.toFixed(2)),
     method,
-    reference: d.reference || null,
+    reference: d.reference ? String(d.reference).trim() : null,
     paid_on: d.paid_on,
     notes: d.notes || null,
   };
@@ -323,19 +326,67 @@ export async function addPurchasePayment(supabase, purchaseId, data, user = {}) 
   const norm = validatePayment(data);
   await assertWithinTotal(supabase, purchase, norm.amount);
 
-  const { error } = await supabase
-    .from('purchase_payments')
-    .insert({ purchase_id: purchaseId, ...norm });
-  if (error) throw new Error(error.message);
+  if (norm.method === 'cheque') {
+    const chequeNumber = norm.reference;
+    // Check if cheque number is unique
+    const { data: existingCheque } = await supabase
+      .from('cheques')
+      .select('id')
+      .eq('cheque_number', chequeNumber)
+      .maybeSingle();
+    if (existingCheque) {
+      throw new Error(`Cheque number "${chequeNumber}" already exists. Please enter a unique cheque number.`);
+    }
 
-  await logActivity(supabase, {
-    userId: user.id,
-    username: user.email ? user.email.split('@')[0] : 'admin',
-    action: 'create',
-    entityType: 'purchase_payment',
-    entityId: purchaseId,
-    details: { amount: norm.amount, method: norm.method }
-  });
+    // Insert into cheques table
+    const { data: newCheque, error: errC } = await supabase
+      .from('cheques')
+      .insert({
+        cheque_number: chequeNumber,
+        supplier_id: purchase.supplier_id,
+        amount: norm.amount,
+        issue_date: norm.paid_on,
+        due_date: norm.paid_on,
+        status: 'issued',
+        notes: norm.notes || `Created via payment on Purchase #${purchase.invoice_no || purchase.id}`
+      })
+      .select()
+      .single();
+    if (errC) throw new Error(errC.message);
+
+    // Insert into cheque_allocations table
+    const { error: errA } = await supabase
+      .from('cheque_allocations')
+      .insert({
+        cheque_id: newCheque.id,
+        purchase_id: purchaseId,
+        allocated_amount: norm.amount
+      });
+    if (errA) throw new Error(errA.message);
+
+    await logActivity(supabase, {
+      userId: user.id,
+      username: user.email ? user.email.split('@')[0] : 'admin',
+      action: 'create',
+      entityType: 'cheque',
+      entityId: newCheque.id,
+      details: { cheque_number: chequeNumber, amount: norm.amount, purchase_id: purchaseId }
+    });
+  } else {
+    const { error } = await supabase
+      .from('purchase_payments')
+      .insert({ purchase_id: purchaseId, ...norm });
+    if (error) throw new Error(error.message);
+
+    await logActivity(supabase, {
+      userId: user.id,
+      username: user.email ? user.email.split('@')[0] : 'admin',
+      action: 'create',
+      entityType: 'purchase_payment',
+      entityId: purchaseId,
+      details: { amount: norm.amount, method: norm.method }
+    });
+  }
 
   return getPurchase(supabase, purchaseId);
 }

@@ -5,6 +5,8 @@ import { api } from '@/api/client';
 import Modal from '@/components/Modal';
 import { Money, Field, MoneyInput, CreditChip } from '@/components/ui';
 
+import { useUI } from '@/context/UIContext';
+
 const today = () => new Date().toISOString().slice(0, 10);
 const blank = { supplier_id: '', invoice_no: '', description: '', total_amount: '', purchase_date: today(), credit_period_days: '' };
 const PRESETS = [30, 45, 60, 70];
@@ -17,27 +19,35 @@ const addDays = (dateStr, n) => {
 
 export default function Purchases() {
   const router = useRouter();
+  const { toast, confirm } = useUI();
   const [rows, setRows] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [filters, setFilters] = useState({ search: '', supplier_id: '' });
   const [editing, setEditing] = useState(null);
-  const [error, setError] = useState('');
 
-  const load = () => api.get('/purchases', { search: filters.search, supplier_id: filters.supplier_id }).then(setRows).catch(e => setError(e.message));
+  const load = () => api.get('/purchases', { search: filters.search, supplier_id: filters.supplier_id }).then(setRows).catch(e => toast.error(e.message));
   useEffect(() => { load(); }, [filters]);
   useEffect(() => { api.get('/suppliers').then(setSuppliers); }, []);
 
   const save = async () => {
-    setError('');
     try {
       if (editing.id) await api.put(`/purchases/${editing.id}`, editing);
       else await api.post('/purchases', editing);
-      setEditing(null); load();
-    } catch (e) { setError(e.message); }
+      const isNew = !editing.id;
+      setEditing(null); 
+      toast.success(isNew ? 'Purchase recorded successfully.' : 'Purchase updated.'); 
+      load();
+    } catch (e) { toast.error(e.message); }
   };
   const remove = async p => {
-    if (!confirm(`Delete purchase ${p.invoice_no || '#' + p.id}?`)) return;
-    try { await api.del(`/purchases/${p.id}`); load(); } catch (e) { setError(e.message); }
+    const confirmed = await confirm({
+      title: 'Delete Purchase',
+      message: `Delete purchase ${p.invoice_no || '#' + p.id}?`,
+      danger: true,
+      confirmText: 'Delete'
+    });
+    if (!confirmed) return;
+    try { await api.del(`/purchases/${p.id}`); toast.success('Purchase deleted.'); load(); } catch (e) { toast.error(e.message); }
   };
 
   // Credit-period select handling for the modal
@@ -61,7 +71,6 @@ export default function Purchases() {
         <div><h1>Purchases</h1><div className="sub">Supplier purchase transactions</div></div>
         <button className="btn primary" onClick={() => setEditing({ ...blank })}>Record purchase</button>
       </div>
-      {error && <div className="alert-error">{error}</div>}
       <div className="toolbar">
         <input placeholder="Search invoice, description, supplier…" value={filters.search} onChange={e => setFilters({ ...filters, search: e.target.value })} />
         <select value={filters.supplier_id} onChange={e => setFilters({ ...filters, supplier_id: e.target.value })}>

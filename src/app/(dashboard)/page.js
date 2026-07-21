@@ -40,27 +40,22 @@ export default function Dashboard() {
       </div>
 
       <div className="kpi-container">
-        {/* Level 1: Savings balance card */}
-        <div className="card kpi-card kpi-balance">
+        {/* Card 1: Savings balance card */}
+        <div className="card kpi-card">
           <div className="kpi-label">Savings balance</div>
           <div className="kpi-val"><Money value={account.balance} /></div>
           <div className="kpi-hint">Available after pending: <Money value={account.available_after_commitments} /></div>
         </div>
 
-        {/* Level 2: Two compact side-by-side cards */}
-        <div className="kpi-row-2">
-          <div className="card kpi-card">
-            <div className="kpi-label">Supplier spend</div>
-            <div className="kpi-val"><Money value={summary.spendTotal} /></div>
-          </div>
-          <div className="card kpi-card">
-            <div className="kpi-label">Revenue deposited</div>
-            <div className="kpi-val"><Money value={summary.revenueTotal} /></div>
-          </div>
+        {/* Card 2: Revenue deposited */}
+        <div className="card kpi-card">
+          <div className="kpi-label">Revenue deposited</div>
+          <div className="kpi-val"><Money value={summary.revenueTotal} /></div>
+          <div className="kpi-hint" style={{ color: 'var(--banker)', fontWeight: 500 }}>Sales revenue this month</div>
         </div>
 
-        {/* Level 3: Cheques this month stats card */}
-        <div className="card kpi-card kpi-cheques">
+        {/* Card 3: Cheques this month stats card */}
+        <div className="card kpi-card">
           <div className="kpi-label">Cheques this month ({cs.total_issued})</div>
           <div className="cheque-stats-compact">
             <div className="stat-block">
@@ -76,6 +71,27 @@ export default function Dashboard() {
               <span className="stat-block-lbl">Bounced</span>
             </div>
           </div>
+        </div>
+
+        {/* Card 4: Total supplier spend */}
+        <div className="card kpi-card">
+          <div className="kpi-label">Total supplier spend</div>
+          <div className="kpi-val"><Money value={summary.spendTotal} /></div>
+          <div className="kpi-hint">Accrual spending (Paid + Payable)</div>
+        </div>
+
+        {/* Card 5: Actually paid */}
+        <div className="card kpi-card" style={{ borderLeft: '3px solid var(--banker)' }}>
+          <div className="kpi-label">Actually paid</div>
+          <div className="kpi-val" style={{ color: 'var(--banker)' }}><Money value={summary.paidTotal} /></div>
+          <div className="kpi-hint">Direct cash & cleared cheques</div>
+        </div>
+
+        {/* Card 6: Have to pay */}
+        <div className="card kpi-card" style={{ borderLeft: '3px solid var(--amber)' }}>
+          <div className="kpi-label">Have to pay</div>
+          <div className="kpi-val" style={{ color: summary.outstandingTotal > 0.005 ? 'var(--amber)' : 'var(--banker)' }}><Money value={summary.outstandingTotal} /></div>
+          <div className="kpi-hint">Total outstanding credit due</div>
         </div>
       </div>
 

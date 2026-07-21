@@ -437,17 +437,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--banker); outline
 .kpi-container {
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   margin-bottom: 20px;
-}
-.kpi-balance {
-  grid-column: span 1;
-}
-.kpi-row-2 {
-  display: contents; /* Direct grid children on desktop */
-}
-.kpi-cheques {
-  grid-column: span 1;
 }
 .kpi-card {
   padding: 18px;
@@ -512,20 +503,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--banker); outline
 
 @media (max-width: 860px) {
   .kpi-container {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  .kpi-balance {
-    grid-column: span 1;
-  }
-  .kpi-row-2 {
-    display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
-    grid-column: span 1;
-  }
-  .kpi-cheques {
-    grid-column: span 1;
   }
   
   /* visual spacing tightening */
@@ -534,6 +513,12 @@ input:focus, select:focus, textarea:focus { border-color: var(--banker); outline
   }
   .card {
     border-radius: 12px;
+  }
+}
+
+@media (max-width: 600px) {
+  .kpi-container {
+    grid-template-columns: 1fr;
   }
 }
 
