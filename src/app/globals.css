@@ -822,5 +822,115 @@ tbody tr { transition: background 0.16s ease; }
   text-transform: uppercase;
 }
 
+/* ---- Toast Notifications ---- */
+.toast-container {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 380px;
+  width: calc(100% - 48px);
+}
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--surface);
+  border-left: 4px solid var(--banker);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(33, 50, 60, 0.14), 0 2px 4px rgba(33, 50, 60, 0.08);
+  animation: toastSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  position: relative;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.toast.success { border-left-color: var(--banker); }
+.toast.error { border-left-color: var(--claret); }
+.toast.warning { border-left-color: var(--amber); }
+.toast.info { border-left-color: var(--ink-2); }
+
+.toast-content {
+  flex: 1;
+  font-weight: 500;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--muted);
+  line-height: 1;
+  padding: 0;
+  margin-left: 8px;
+  margin-top: -2px;
+}
+.toast-close:hover { color: var(--ink); }
+
+@keyframes toastSlideIn {
+  from { transform: translateX(120%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* ---- Custom Confirmation Dialog ---- */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 30, 36, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 9999;
+  animation: dialogFadeIn 0.2s ease-out forwards;
+}
+.dialog {
+  background: var(--surface);
+  border-radius: 8px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  animation: dialogScaleIn 0.24s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+}
+.dialog-body {
+  padding: 24px 24px 20px;
+}
+.dialog-title {
+  font-family: var(--font-display), 'Archivo', sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: var(--ink);
+}
+.dialog-message {
+  font-size: 13.5px;
+  color: var(--ink-2);
+  line-height: 1.55;
+}
+.dialog-foot {
+  padding: 14px 24px 20px;
+  background: var(--paper);
+  border-top: 1px solid var(--rule);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+@keyframes dialogFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes dialogScaleIn {
+  from { transform: scale(0.94); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
 
 

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { api } from '@/api/client';
 import Modal from '@/components/Modal';
 import { Money, Stamp, ChequeNo, Field } from '@/components/ui';
+import { useUI } from '@/context/UIContext';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const blank = { cheque_number: '', supplier_id: '', amount: '', issue_date: today(), due_date: '', bank_name: '', bank_account_no: '', branch_name: '', branch_code: '', notes: '', allocations: [] };
@@ -15,15 +16,15 @@ const NEXT = {
 };
 
 export default function Cheques() {
+  const { toast, confirm } = useUI();
   const [rows, setRows] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [purchases, setPurchases] = useState([]);   // open purchases for the selected supplier
   const [filters, setFilters] = useState({ search: '', status: '', supplier_id: '' });
   const [editing, setEditing] = useState(null);
-  const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
+  const [initialAllocations, setInitialAllocations] = useState([]);
 
-  const load = () => api.get('/cheques', filters).then(setRows).catch(e => setError(e.message));
+  const load = () => api.get('/cheques', filters).then(setRows).catch(e => toast.error(e.message));
   useEffect(() => { load(); }, [filters]);
   useEffect(() => { api.get('/suppliers').then(setSuppliers); }, []);
 
@@ -36,17 +37,47 @@ export default function Cheques() {
 
   const openEdit = async c => {
     const full = await api.get(`/cheques/${c.id}`);
-    setEditing({ ...full, allocations: full.allocations.map(a => ({ purchase_id: a.purchase_id, allocated_amount: a.allocated_amount })) });
+    const allocs = full.allocations.map(a => ({ purchase_id: a.purchase_id, allocated_amount: a.allocated_amount }));
+    setEditing({ ...full, allocations: allocs });
+    setInitialAllocations(allocs);
   };
 
   const save = async () => {
-    setError('');
-    const payload = { ...editing, allocations: editing.allocations.filter(a => a.purchase_id && a.allocated_amount) };
+    const chequeAmt = Number(editing.amount) || 0;
+    if (chequeAmt <= 0) {
+      toast.error('Cheque amount must be a positive number.');
+      return;
+    }
+
+    const allocations = editing.allocations.filter(a => a.purchase_id && a.allocated_amount);
+    const totalAllocated = allocations.reduce((sum, a) => sum + (Number(a.allocated_amount) || 0), 0);
+
+    if (Math.abs(totalAllocated - chequeAmt) > 0.005) {
+      toast.error(`Total allocated amount (${totalAllocated.toFixed(2)}) must equal the cheque amount (${chequeAmt.toFixed(2)}).`);
+      return;
+    }
+
+    for (const a of allocations) {
+      const p = purchases.find(x => x.id === a.purchase_id);
+      if (p) {
+        const origAlloc = !['bounced', 'cancelled'].includes(editing.status)
+          ? (initialAllocations.find(ia => ia.purchase_id === p.id)?.allocated_amount || 0)
+          : 0;
+        const origOutstanding = Number((Number(p.outstanding) + Number(origAlloc)).toFixed(2));
+        const allocatedAmt = Number(a.allocated_amount);
+        if (allocatedAmt - origOutstanding > 0.005) {
+          toast.error(`Allocation of ${allocatedAmt.toFixed(2)} to invoice ${p.invoice_no || '#' + p.id} exceeds its outstanding balance (${origOutstanding.toFixed(2)}).`);
+          return;
+        }
+      }
+    }
+
+    const payload = { ...editing, allocations };
     try {
       if (editing.id) await api.put(`/cheques/${editing.id}`, payload);
       else await api.post('/cheques', payload);
-      setEditing(null); setNotice('Cheque saved.'); load();
-    } catch (e) { setError(e.message); }
+      setEditing(null); toast.success('Cheque saved.'); load();
+    } catch (e) { toast.error(e.message); }
   };
 
   const setStatus = async (c, status) => {
@@ -56,15 +87,27 @@ export default function Cheques() {
       bounced: `Mark cheque ${c.cheque_number} as BOUNCED? A bounce alert SMS will be sent.`,
       cancelled: `Cancel cheque ${c.cheque_number}? This is final.`,
     };
-    if (warnings[status] && !confirm(warnings[status])) return;
-    setError('');
-    try { await api.post(`/cheques/${c.id}/status`, { status }); setNotice(`Cheque ${c.cheque_number} marked ${status.replace('_', ' ')}.`); load(); }
-    catch (e) { setError(e.message); }
+    if (warnings[status]) {
+      const confirmed = await confirm({
+        title: `${status === 'cleared' ? 'Clear' : status === 'bounced' ? 'Bounce' : 'Cancel'} Cheque`,
+        message: warnings[status],
+        danger: status === 'cancelled' || status === 'bounced'
+      });
+      if (!confirmed) return;
+    }
+    try { await api.post(`/cheques/${c.id}/status`, { status }); toast.success(`Cheque ${c.cheque_number} marked ${status.replace('_', ' ')}.`); load(); }
+    catch (e) { toast.error(e.message); }
   };
 
   const remove = async c => {
-    if (!confirm(`Delete cheque ${c.cheque_number}? Only issued/cancelled cheques can be removed.`)) return;
-    try { await api.del(`/cheques/${c.id}`); load(); } catch (e) { setError(e.message); }
+    const confirmed = await confirm({
+      title: 'Delete Cheque',
+      message: `Delete cheque ${c.cheque_number}? Only issued/cancelled cheques can be removed.`,
+      danger: true,
+      confirmText: 'Delete'
+    });
+    if (!confirmed) return;
+    try { await api.del(`/cheques/${c.id}`); toast.success(`Cheque ${c.cheque_number} deleted.`); load(); } catch (e) { toast.error(e.message); }
   };
 
   const allocTotal = editing ? editing.allocations.reduce((s, a) => s + (Number(a.allocated_amount) || 0), 0) : 0;
@@ -73,10 +116,8 @@ export default function Cheques() {
     <>
       <div className="page-head">
         <div><h1>Cheques</h1><div className="sub">Register, allocate and track every cheque through its lifecycle</div></div>
-        <button className="btn primary" onClick={() => setEditing({ ...blank })}>Register cheque</button>
+        <button className="btn primary" onClick={() => { setEditing({ ...blank }); setInitialAllocations([]); }}>Register cheque</button>
       </div>
-      {error && <div className="alert-error">{error}</div>}
-      {notice && <div className="alert-ok">{notice}</div>}
       <div className="toolbar">
         <input placeholder="Search cheque no, supplier, bank…" value={filters.search} onChange={e => setFilters({ ...filters, search: e.target.value })} />
         <select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })}>
@@ -127,7 +168,10 @@ export default function Cheques() {
           <div className="grid cols-2">
             <Field label="Cheque number *"><input value={editing.cheque_number} onChange={e => setEditing({ ...editing, cheque_number: e.target.value })} /></Field>
             <Field label="Supplier *">
-              <select value={editing.supplier_id} onChange={e => setEditing({ ...editing, supplier_id: e.target.value ? Number(e.target.value) : '', allocations: [] })}>
+              <select value={editing.supplier_id} onChange={e => {
+                setEditing({ ...editing, supplier_id: e.target.value ? Number(e.target.value) : '', allocations: [] });
+                setInitialAllocations([]);
+              }}>
                 <option value="">Select…</option>
                 {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
@@ -146,40 +190,89 @@ export default function Cheques() {
           </div>
           <Field label="Notes"><input value={editing.notes || ''} onChange={e => setEditing({ ...editing, notes: e.target.value })} /></Field>
 
-          <h3 style={{ fontSize: 14, margin: '14px 0 8px' }}>Allocate to purchases (partial payments)</h3>
-          <p className="muted" style={{ marginTop: 0, fontSize: 12.5 }}>
-            Split this cheque across one or more of the supplier's outstanding purchases. Several cheques can settle a single purchase over time.
+          <h3 style={{ fontSize: 14, margin: '18px 0 8px' }}>Allocate to purchases (partial payments)</h3>
+          <p className="muted" style={{ marginTop: 0, fontSize: 12.5, marginBottom: 12 }}>
+            Allocate parts of this cheque's amount directly to the supplier's outstanding purchases.
           </p>
-          {editing.allocations.map((a, i) => {
-            const p = purchases.find(x => x.id === a.purchase_id);
-            const outstanding = p ? p.total_amount - p.paid_amount : null;
+          {!editing.supplier_id ? (
+            <div className="empty" style={{ padding: '16px', fontSize: 13, border: '1px dashed var(--rule)', borderRadius: 'var(--radius)' }}>
+              Please select a supplier first to view available invoices.
+            </div>
+          ) : (() => {
+            const visiblePurchases = purchases.filter(p => p.outstanding > 0 || initialAllocations.some(ia => ia.purchase_id === p.id));
+            if (visiblePurchases.length === 0) {
+              return (
+                <div className="empty" style={{ padding: '16px', fontSize: 13, border: '1px dashed var(--rule)', borderRadius: 'var(--radius)' }}>
+                  No outstanding purchases found for this supplier.
+                </div>
+              );
+            }
             return (
-              <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
-                <select style={{ flex: 2 }} value={a.purchase_id || ''} onChange={e => {
-                  const next = [...editing.allocations]; next[i] = { ...a, purchase_id: e.target.value ? Number(e.target.value) : '' };
-                  setEditing({ ...editing, allocations: next });
-                }}>
-                  <option value="">Select purchase…</option>
-                  {purchases.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {(p.invoice_no || `#${p.id}`)} · {p.purchase_date} · outstanding {(p.total_amount - p.paid_amount).toFixed(2)}
-                    </option>
-                  ))}
-                </select>
-                <input style={{ flex: 1 }} type="number" min="0" step="0.01" placeholder="Amount"
-                  value={a.allocated_amount} onChange={e => {
-                    const next = [...editing.allocations]; next[i] = { ...a, allocated_amount: e.target.value };
-                    setEditing({ ...editing, allocations: next });
-                  }} />
-                <button className="x" title="Remove allocation" onClick={() => setEditing({ ...editing, allocations: editing.allocations.filter((_, j) => j !== i) })}>×</button>
-                {outstanding !== null && <span className="muted mono" style={{ fontSize: 11 }}>max {outstanding.toFixed(2)}</span>}
+              <div className="table-wrap" style={{ maxHeight: 220, overflowY: 'auto', border: '1px solid var(--rule)', borderRadius: 'var(--radius)', marginBottom: 10 }}>
+                <table style={{ fontSize: 12.5 }}>
+                  <thead>
+                    <tr>
+                      <th>Invoice No</th>
+                      <th>Date</th>
+                      <th className="num">Total</th>
+                      <th className="num">Outstanding</th>
+                      <th style={{ width: 140, paddingLeft: 12 }}>Payment Allocation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visiblePurchases.map(p => {
+                      const alloc = editing.allocations.find(a => a.purchase_id === p.id);
+                      const val = alloc ? alloc.allocated_amount : '';
+                      
+                      // Calculate original outstanding balance before this cheque was applied:
+                      const origAlloc = !['bounced', 'cancelled'].includes(editing.status)
+                        ? (initialAllocations.find(ia => ia.purchase_id === p.id)?.allocated_amount || 0)
+                        : 0;
+                      const origOutstanding = Number((Number(p.outstanding) + Number(origAlloc)).toFixed(2));
+
+                      const handleAllocChange = (newVal) => {
+                        let next = [...editing.allocations];
+                        const idx = next.findIndex(a => a.purchase_id === p.id);
+                        if (idx >= 0) {
+                          if (newVal === '' || Number(newVal) <= 0) {
+                            next.splice(idx, 1);
+                          } else {
+                            next[idx] = { ...next[idx], allocated_amount: newVal };
+                          }
+                        } else if (newVal !== '' && Number(newVal) > 0) {
+                          next.push({ purchase_id: p.id, allocated_amount: newVal });
+                        }
+                        setEditing({ ...editing, allocations: next });
+                      };
+
+                      return (
+                        <tr key={p.id}>
+                          <td>{p.invoice_no || `#${p.id}`}</td>
+                          <td className="mono">{p.purchase_date}</td>
+                          <td className="num"><Money value={p.total_amount} /></td>
+                          <td className="num" style={{ fontWeight: 500, color: origOutstanding > 0 ? 'var(--amber)' : 'inherit' }}>
+                            <Money value={origOutstanding} />
+                          </td>
+                          <td style={{ padding: '6px 12px' }}>
+                            <input
+                              type="number"
+                              min="0"
+                              max={origOutstanding}
+                              step="0.01"
+                              placeholder="0.00"
+                              value={val}
+                              onChange={e => handleAllocChange(e.target.value)}
+                              style={{ padding: '5px 8px', fontSize: 13, height: 30 }}
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             );
-          })}
-          <button className="btn ghost sm" disabled={!editing.supplier_id}
-            onClick={() => setEditing({ ...editing, allocations: [...editing.allocations, { purchase_id: '', allocated_amount: '' }] })}>
-            + Add allocation
-          </button>
+          })()}
           {editing.allocations.length > 0 && (
             <div className="mono" style={{ marginTop: 10, fontSize: 12.5, color: allocTotal > +editing.amount ? 'var(--claret)' : 'var(--muted)' }}>
               Allocated {allocTotal.toFixed(2)} of {(Number(editing.amount) || 0).toFixed(2)}

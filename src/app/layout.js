@@ -42,6 +42,7 @@ export const viewport = {
 };
 
 import { AuthProvider } from "@/context/AuthContext";
+import { UIProvider } from "@/context/UIContext";
 
 export default function RootLayout({ children }) {
   return (
@@ -52,7 +53,9 @@ export default function RootLayout({ children }) {
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <AuthProvider>
-          {children}
+          <UIProvider>
+            {children}
+          </UIProvider>
         </AuthProvider>
       </body>
     </html>

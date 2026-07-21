@@ -59,8 +59,8 @@ async function validate(supabase, d, existingId = null) {
 async function applyAllocations(supabase, chequeId, cheque, allocations) {
   // allocations: [{ purchase_id, allocated_amount }]
   const total = allocations.reduce((sum, a) => sum + Number(a.allocated_amount), 0);
-  if (total - cheque.amount > 0.005) {
-    throw new Error(`Allocations (${total.toFixed(2)}) exceed the cheque amount (${cheque.amount.toFixed(2)}).`);
+  if (Math.abs(total - cheque.amount) > 0.005) {
+    throw new Error(`Total allocated amount (${total.toFixed(2)}) must equal the cheque amount (${cheque.amount.toFixed(2)}).`);
   }
 
   // 1. Delete existing allocations for this cheque first
@@ -199,9 +199,8 @@ export async function createCheque(supabase, data, user = {}) {
 
   if (error) throw new Error(error.message);
 
-  if (Array.isArray(data.allocations) && data.allocations.length) {
-    await applyAllocations(supabase, newCheque.id, norm, data.allocations);
-  }
+  const allocs = (data.allocations || []).filter(a => a.purchase_id && a.allocated_amount);
+  await applyAllocations(supabase, newCheque.id, norm, allocs);
 
   const username = user.email ? user.email.split('@')[0] : 'admin';
   await logActivity(supabase, {
@@ -231,9 +230,8 @@ export async function updateCheque(supabase, id, data, user = {}) {
 
   if (error) throw new Error(error.message);
 
-  if (Array.isArray(data.allocations)) {
-    await applyAllocations(supabase, id, norm, data.allocations);
-  }
+  const allocs = (data.allocations || []).filter(a => a.purchase_id && a.allocated_amount);
+  await applyAllocations(supabase, id, norm, allocs);
 
   const username = user.email ? user.email.split('@')[0] : 'admin';
   await logActivity(supabase, {
