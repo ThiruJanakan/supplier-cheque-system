@@ -2,13 +2,14 @@ import ExcelJS from 'exceljs';
 import PDFDocument from 'pdfkit';
 import { getSetting } from './settingsService';
 import { listCheques } from './chequeService';
-import { listSuppliers } from './supplierService';
-import { listPurchases } from './purchaseService';
+import { listSuppliers, monthBounds } from './supplierService';
+import { listPurchases, listCreditDues } from './purchaseService';
+import { listRevenue, getBalance } from './financeService';
 
+// Delegates to monthBounds so short months get a real last day
+// (a hardcoded "-31" breaks Postgres date casts for e.g. June).
 function monthRange(month) {
-  if (!/^\d{4}-\d{2}$/.test(month)) throw new Error('Month must be in YYYY-MM format.');
-  // Safe date range
-  return { from: `${month}-01`, to: `${month}-31` };
+  return monthBounds(month);
 }
 
 export async function monthlySummary(supabase, month) {
@@ -194,35 +195,316 @@ export async function getCalendar(supabase, month) {
   }));
 }
 
+// ============================================================
+// Excel styling helpers (shared by all workbook exports)
+// ============================================================
+const XL = {
+  brand: 'FF185C45',   // banker green
+  ink: 'FF1F2937',
+  muted: 'FF6B7280',
+  shade: 'FFF3F6F4',   // zebra stripe
+  red: 'FFB42318',
+  green: 'FF107C41',
+  money: '#,##0.00',
+};
+const xlThin = { style: 'thin', color: { argb: 'FFE5E7EB' } };
+const xlBox = { top: xlThin, left: xlThin, bottom: xlThin, right: xlThin };
+const xlFill = argb => ({ type: 'pattern', pattern: 'solid', fgColor: { argb } });
+
+function xlMonthName(month) {
+  const [y, m] = month.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, 1)).toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+}
+
+// Green title banner + generated-on subtitle across `cols` columns.
+function xlTitle(ws, title, subtitle, cols) {
+  ws.mergeCells(1, 1, 1, cols);
+  const t = ws.getCell(1, 1);
+  t.value = title;
+  t.font = { bold: true, size: 15, color: { argb: 'FFFFFFFF' } };
+  t.fill = xlFill(XL.brand);
+  t.alignment = { vertical: 'middle', indent: 1 };
+  ws.getRow(1).height = 30;
+
+  ws.mergeCells(2, 1, 2, cols);
+  const s = ws.getCell(2, 1);
+  s.value = subtitle;
+  s.font = { size: 9, italic: true, color: { argb: XL.muted } };
+  s.alignment = { vertical: 'middle', indent: 1 };
+  ws.getRow(2).height = 16;
+  ws.addRow([]);
+}
+
+// Bold white-on-green column header row.
+function xlHeader(ws, labels) {
+  const row = ws.addRow(labels);
+  for (let i = 1; i <= labels.length; i++) {
+    const c = row.getCell(i);
+    c.font = { bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
+    c.fill = xlFill(XL.brand);
+    c.border = xlBox;
+    c.alignment = { vertical: 'middle', wrapText: true };
+  }
+  row.height = 20;
+  ws.views = [{ state: 'frozen', ySplit: row.number }];
+  return row;
+}
+
+// Bordered data row with zebra striping.
+function xlRow(ws, values, idx) {
+  const row = ws.addRow(values);
+  for (let i = 1; i <= values.length; i++) {
+    const c = row.getCell(i);
+    c.border = xlBox;
+    if (idx % 2 === 1) c.fill = xlFill(XL.shade);
+  }
+  return row;
+}
+
+// Bold totals row with a heavier top border.
+function xlTotal(ws, values) {
+  const row = ws.addRow(values);
+  for (let i = 1; i <= values.length; i++) {
+    const c = row.getCell(i);
+    c.font = { bold: true, color: { argb: XL.ink } };
+    c.border = { ...xlBox, top: { style: 'medium', color: { argb: XL.brand } } };
+    c.fill = xlFill(XL.shade);
+  }
+  return row;
+}
+
+// Section sub-heading inside the Summary sheet.
+function xlSection(ws, text) {
+  ws.addRow([]);
+  const row = ws.addRow([text.toUpperCase()]);
+  row.getCell(1).font = { bold: true, size: 10, color: { argb: XL.brand } };
+  row.getCell(1).border = { bottom: { style: 'medium', color: { argb: XL.brand } } };
+  row.getCell(2).border = { bottom: { style: 'medium', color: { argb: XL.brand } } };
+}
+
+// Label / value pair on the Summary sheet.
+function xlKpi(ws, label, value, { numFmt, color } = {}) {
+  const row = ws.addRow([label, value]);
+  row.getCell(1).font = { size: 10, color: { argb: XL.muted } };
+  const v = row.getCell(2);
+  v.font = { bold: true, size: 10, color: { argb: color || XL.ink } };
+  v.alignment = { horizontal: 'right' };
+  if (numFmt) v.numFmt = numFmt;
+  return row;
+}
+
 export async function exportExcel(supabase, month) {
   const data = await monthlySummary(supabase, month);
-  const currency = await getSetting(supabase, 'currency') || 'LKR';
-  const wb = new ExcelJS.Workbook();
-
-  const summary = wb.addWorksheet('Summary');
-  summary.addRows([
-    [`Monthly Report - ${month}`], [],
-    ['Total supplier spending', data.spendTotal],
-    ['Total sales revenue deposited', data.revenueTotal],
-    ['Cheques issued', data.chequeStats.total_issued],
-    ['Pending clearance', data.chequeStats.pending_clearance],
-    ['Cleared', data.chequeStats.cleared],
-    ['Bounced', data.chequeStats.bounced],
+  const [trends, currencySetting, balance, dues] = await Promise.all([
+    getTrends(supabase, 6),
+    getSetting(supabase, 'currency'),
+    getBalance(supabase),
+    listCreditDues(supabase, {}),
   ]);
-  summary.getColumn(1).width = 34; 
-  summary.getColumn(2).width = 18;
-  summary.getCell('A1').font = { bold: true, size: 14 };
+  const currency = currencySetting || 'LKR';
+  const monthName = xlMonthName(month);
+  const generated = `Generated ${new Date().toISOString().slice(0, 16).replace('T', ' ')} · All amounts in ${currency}`;
+  const cs = data.chequeStats;
+  const net = data.revenueTotal - data.spendTotal;
+  const upcomingValue = data.upcoming.reduce((s, c) => s + Number(c.amount), 0);
+  const topSupplier = data.spendBySupplier[0];
 
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Cheque Manager';
+
+  // ---- Summary sheet ----
+  const summary = wb.addWorksheet('Summary');
+  summary.getColumn(1).width = 44;
+  summary.getColumn(2).width = 22;
+  summary.getColumn(3).width = 30;
+  xlTitle(summary, `Monthly Performance Report — ${monthName}`, generated, 3);
+
+  xlSection(summary, 'Cash flow');
+  xlKpi(summary, 'Total supplier spending', data.spendTotal, { numFmt: XL.money });
+  xlKpi(summary, 'Total sales revenue deposited', data.revenueTotal, { numFmt: XL.money });
+  xlKpi(summary, 'Net cash flow (revenue − spending)', net, { numFmt: XL.money, color: net < 0 ? XL.red : XL.green });
+
+  xlSection(summary, 'Cheques issued this month');
+  xlKpi(summary, 'Cheques issued', cs.total_issued);
+  xlKpi(summary, 'Total value issued', cs.total_value, { numFmt: XL.money });
+  xlKpi(summary, 'Pending clearance', cs.pending_clearance, { color: cs.pending_clearance > 0 ? XL.red : XL.green });
+  xlKpi(summary, 'Cleared', cs.cleared, { color: XL.green });
+  xlKpi(summary, 'Bounced', cs.bounced, { color: cs.bounced > 0 ? XL.red : XL.ink });
+
+  xlSection(summary, 'Position today');
+  xlKpi(summary, 'Savings account balance', balance, { numFmt: XL.money });
+  xlKpi(summary, 'Cheques awaiting clearance (value)', upcomingValue, { numFmt: XL.money });
+  xlKpi(summary, 'Balance after pending cheques clear', balance - upcomingValue,
+    { numFmt: XL.money, color: balance - upcomingValue < 0 ? XL.red : XL.green });
+  xlKpi(summary, 'Outstanding credit dues to suppliers', dues.grand.outstanding,
+    { numFmt: XL.money, color: dues.grand.outstanding > 0 ? XL.red : XL.green });
+
+  xlSection(summary, 'Insights');
+  const insights = [];
+  insights.push(net >= 0
+    ? `Revenue covered spending with ${currency} ${net.toLocaleString('en-US', { minimumFractionDigits: 2 })} to spare.`
+    : `Spending exceeded revenue by ${currency} ${(-net).toLocaleString('en-US', { minimumFractionDigits: 2 })} — review supplier costs.`);
+  if (topSupplier && data.spendTotal > 0) {
+    const share = topSupplier.total / data.spendTotal;
+    insights.push(`Top supplier "${topSupplier.name}" accounts for ${(share * 100).toFixed(1)}% of this month's spending${share > 0.5 ? ' — high concentration risk.' : '.'}`);
+  }
+  if (cs.total_issued > 0 && cs.bounced > 0) {
+    insights.push(`${cs.bounced} of ${cs.total_issued} cheques bounced (${((cs.bounced / cs.total_issued) * 100).toFixed(1)}%) — check savings cover before issuing.`);
+  }
+  if (balance - upcomingValue < 0) {
+    insights.push(`Savings balance cannot cover all pending cheques — shortfall of ${currency} ${(upcomingValue - balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}.`);
+  }
+  insights.push(`${data.upcoming.length} cheques worth ${currency} ${upcomingValue.toLocaleString('en-US', { minimumFractionDigits: 2 })} are pending clearance.`);
+  insights.forEach(text => {
+    const row = summary.addRow([`•  ${text}`]);
+    summary.mergeCells(row.number, 1, row.number, 3);
+    row.getCell(1).font = { size: 10, color: { argb: XL.ink } };
+    row.getCell(1).alignment = { wrapText: true, vertical: 'top' };
+  });
+
+  // ---- Spending by supplier ----
   const bySup = wb.addWorksheet('Spending by supplier');
-  bySup.addRow(['Supplier', `Total (${currency})`]).font = { bold: true };
-  data.spendBySupplier.forEach(r => bySup.addRow([r.name, r.total]));
-  bySup.getColumn(1).width = 40; 
-  bySup.getColumn(2).width = 18;
+  [42, 20, 14].forEach((w, i) => bySup.getColumn(i + 1).width = w);
+  xlTitle(bySup, `Spending by Supplier — ${monthName}`, generated, 3);
+  xlHeader(bySup, ['Supplier', `Total (${currency})`, 'Share of spend']);
+  data.spendBySupplier.forEach((r, i) => {
+    const row = xlRow(bySup, [r.name, r.total, data.spendTotal ? r.total / data.spendTotal : 0], i);
+    row.getCell(2).numFmt = XL.money;
+    row.getCell(3).numFmt = '0.0%';
+  });
+  if (!data.spendBySupplier.length) xlRow(bySup, ['No purchases recorded this month.', '', ''], 0);
+  else {
+    const t = xlTotal(bySup, ['Total', data.spendTotal, 1]);
+    t.getCell(2).numFmt = XL.money;
+    t.getCell(3).numFmt = '0.0%';
+  }
 
+  // ---- Upcoming cheques ----
   const up = wb.addWorksheet('Upcoming cheques');
-  up.addRow(['Due date', 'Cheque no', 'Supplier', `Amount (${currency})`, 'Status']).font = { bold: true };
-  data.upcoming.forEach(c => up.addRow([c.due_date, c.cheque_number, c.supplier_name, c.amount, c.status]));
-  [14, 16, 36, 16, 14].forEach((w, i) => up.getColumn(i + 1).width = w);
+  [14, 18, 36, 18, 16, 12].forEach((w, i) => up.getColumn(i + 1).width = w);
+  xlTitle(up, 'Upcoming Cheque Due Dates', generated, 6);
+  xlHeader(up, ['Due date', 'Cheque no', 'Supplier', `Amount (${currency})`, 'Status', 'Days to due']);
+  const todayStr = new Date().toISOString().slice(0, 10);
+  data.upcoming.forEach((c, i) => {
+    const days = Math.round((new Date(`${c.due_date}T00:00:00Z`) - new Date(`${todayStr}T00:00:00Z`)) / 86400000);
+    const row = xlRow(up, [c.due_date, c.cheque_number, c.supplier_name, Number(c.amount), c.status.replace('_', ' '), days], i);
+    row.getCell(4).numFmt = XL.money;
+    if (days < 0) row.getCell(6).font = { bold: true, color: { argb: XL.red } };
+    else if (days <= 3) row.getCell(6).font = { bold: true, color: { argb: 'FFD97706' } };
+  });
+  if (!data.upcoming.length) xlRow(up, ['No pending cheques.', '', '', '', '', ''], 0);
+  else {
+    const t = xlTotal(up, ['Total', '', '', upcomingValue, '', '']);
+    t.getCell(4).numFmt = XL.money;
+  }
+
+  // ---- 6-month trend ----
+  const tr = wb.addWorksheet('6-month trend');
+  [12, 20, 20, 20].forEach((w, i) => tr.getColumn(i + 1).width = w);
+  xlTitle(tr, 'Spending vs Revenue — Last 6 Months', generated, 4);
+  xlHeader(tr, ['Month', `Spending (${currency})`, `Revenue (${currency})`, `Net (${currency})`]);
+  trends.forEach((r, i) => {
+    const rowNet = r.revenue - r.spending;
+    const row = xlRow(tr, [r.month, r.spending, r.revenue, rowNet], i);
+    [2, 3, 4].forEach(n => row.getCell(n).numFmt = XL.money);
+    row.getCell(4).font = { bold: true, color: { argb: rowNet < 0 ? XL.red : XL.green } };
+    if (r.month === month) row.getCell(1).font = { bold: true, color: { argb: XL.brand } };
+  });
+
+  return wb.xlsx.writeBuffer();
+}
+
+// ============================================================
+// Sales & revenue workbook for one month
+// ============================================================
+export async function exportRevenueExcel(supabase, month) {
+  const { from, to } = monthBounds(month);
+  const [entriesDesc, currencySetting, balance] = await Promise.all([
+    listRevenue(supabase, { from, to }),
+    getSetting(supabase, 'currency'),
+    getBalance(supabase),
+  ]);
+  const currency = currencySetting || 'LKR';
+  const entries = [...entriesDesc].reverse(); // chronological for reading
+  const monthName = xlMonthName(month);
+  const generated = `Generated ${new Date().toISOString().slice(0, 16).replace('T', ' ')} · All amounts in ${currency}`;
+
+  const { data: ledger, error: errL } = await supabase
+    .from('savings_transactions')
+    .select('*')
+    .gte('created_at', `${from}T00:00:00`)
+    .lte('created_at', `${to}T23:59:59.999`)
+    .order('created_at', { ascending: true })
+    .order('id', { ascending: true });
+  if (errL) throw new Error(errL.message);
+
+  const totalRevenue = entries.reduce((s, e) => s + Number(e.amount), 0);
+  const byDay = {};
+  entries.forEach(e => { byDay[e.entry_date] = (byDay[e.entry_date] || 0) + Number(e.amount); });
+  const days = Object.entries(byDay).sort((a, b) => b[1] - a[1]);
+  const bestDay = days[0];
+  const worstDay = days[days.length - 1];
+  const daysInMonth = Number(to.slice(-2));
+  const deposits = ledger.filter(t => Number(t.amount) > 0).reduce((s, t) => s + Number(t.amount), 0);
+  const withdrawals = ledger.filter(t => Number(t.amount) < 0).reduce((s, t) => s - Number(t.amount), 0);
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Cheque Manager';
+
+  // ---- Summary ----
+  const summary = wb.addWorksheet('Summary');
+  summary.getColumn(1).width = 44;
+  summary.getColumn(2).width = 22;
+  summary.getColumn(3).width = 30;
+  xlTitle(summary, `Sales & Revenue Report — ${monthName}`, generated, 3);
+
+  xlSection(summary, 'Sales revenue');
+  xlKpi(summary, 'Total revenue deposited', totalRevenue, { numFmt: XL.money });
+  xlKpi(summary, 'Entries recorded', entries.length);
+  xlKpi(summary, `Days with sales (of ${daysInMonth})`, days.length);
+  xlKpi(summary, 'Average per sales day', days.length ? totalRevenue / days.length : 0, { numFmt: XL.money });
+  if (bestDay) xlKpi(summary, `Best day (${bestDay[0]})`, bestDay[1], { numFmt: XL.money, color: XL.green });
+  if (worstDay && days.length > 1) xlKpi(summary, `Slowest day (${worstDay[0]})`, worstDay[1], { numFmt: XL.money });
+
+  xlSection(summary, 'Savings account movement this month');
+  xlKpi(summary, 'Deposits into savings', deposits, { numFmt: XL.money, color: XL.green });
+  xlKpi(summary, 'Withdrawals (cheque clearances etc.)', withdrawals, { numFmt: XL.money, color: withdrawals > 0 ? XL.red : XL.ink });
+  xlKpi(summary, 'Net movement', deposits - withdrawals, { numFmt: XL.money, color: deposits - withdrawals < 0 ? XL.red : XL.green });
+  xlKpi(summary, 'Current balance (today)', balance, { numFmt: XL.money });
+
+  // ---- Revenue entries ----
+  const es = wb.addWorksheet('Revenue entries');
+  [14, 20, 50].forEach((w, i) => es.getColumn(i + 1).width = w);
+  xlTitle(es, `Revenue Entries — ${monthName}`, generated, 3);
+  xlHeader(es, ['Date', `Amount (${currency})`, 'Notes']);
+  entries.forEach((e, i) => {
+    const row = xlRow(es, [e.entry_date, Number(e.amount), e.notes || ''], i);
+    row.getCell(2).numFmt = XL.money;
+  });
+  if (!entries.length) xlRow(es, ['No revenue recorded this month.', '', ''], 0);
+  else {
+    const t = xlTotal(es, ['Total', totalRevenue, '']);
+    t.getCell(2).numFmt = XL.money;
+  }
+
+  // ---- Savings ledger ----
+  const ls = wb.addWorksheet('Savings ledger');
+  [20, 18, 34, 18, 18].forEach((w, i) => ls.getColumn(i + 1).width = w);
+  xlTitle(ls, `Savings Ledger — ${monthName}`, generated, 5);
+  xlHeader(ls, ['When', 'Type', 'Reference', `Amount (${currency})`, `Balance after (${currency})`]);
+  ledger.forEach((t, i) => {
+    const row = xlRow(ls, [
+      String(t.created_at).slice(0, 16).replace('T', ' '),
+      String(t.type).replace(/_/g, ' '),
+      t.reference || '',
+      Number(t.amount),
+      Number(t.balance_after),
+    ], i);
+    row.getCell(4).numFmt = XL.money;
+    row.getCell(5).numFmt = XL.money;
+    if (Number(t.amount) < 0) row.getCell(4).font = { color: { argb: XL.red } };
+  });
+  if (!ledger.length) xlRow(ls, ['No savings activity this month.', '', '', '', ''], 0);
 
   return wb.xlsx.writeBuffer();
 }
@@ -268,13 +550,14 @@ export async function exportPdf(supabase, month, stream) {
 // ============================================================
 // Suppliers directory PDF (contact, bank & credit summary)
 // ============================================================
-export async function exportSuppliersPdf(supabase, stream) {
+export async function exportSuppliersPdf(supabase, stream, month = '') {
   const currency = await getSetting(supabase, 'currency') || 'LKR';
   const fmt = n => `${currency} ${Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+  const bounds = month ? monthBounds(month) : null;
   const [suppliers, purchases] = await Promise.all([
-    listSuppliers(supabase, {}),
-    listPurchases(supabase, {}),
+    listSuppliers(supabase, { month }),
+    listPurchases(supabase, bounds ? { from: bounds.from, to: bounds.to } : {}),
   ]);
 
   // Aggregate purchase totals per supplier.
@@ -313,7 +596,7 @@ export async function exportSuppliersPdf(supabase, stream) {
   doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(20)
      .text('Supplier Directory', left, 30);
   doc.font('Helvetica').fontSize(10).fillColor('#d1e7dd')
-     .text('Contact, bank details & outstanding credit', left, 58);
+     .text(`Contact, bank details & outstanding credit${month ? ` — ${month}` : ''}`, left, 58);
   doc.fontSize(9).fillColor('#d1e7dd')
      .text(`Generated ${new Date().toISOString().slice(0, 16).replace('T', ' ')} · ${suppliers.length} active suppliers`, left, 74);
 

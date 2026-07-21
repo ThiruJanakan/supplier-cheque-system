@@ -62,6 +62,7 @@ export default function Reports() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    setError('');
     Promise.all([
       api.get('/reports/monthly', { month }),
       api.get('/reports/trends', { months: 6 }),
@@ -71,9 +72,7 @@ export default function Reports() {
       .catch(e => setError(e.message));
   }, [month]);
 
-  if (error) return <div className="alert-error">{error}</div>;
-  if (!summary) return <Loader text="Loading reports" />;
-  const cs = summary.chequeStats;
+  const cs = summary?.chequeStats;
 
   const handleExportPdf = () => {
     try {
@@ -335,16 +334,26 @@ export default function Reports() {
     }
   };
 
+  // Always rendered — even on error — so the user can pick a different month.
+  // `required` also removes the browser's "Clear" button from the month picker,
+  // and the onChange guard ignores an empty value if it slips through.
+  const head = (
+    <div className="page-head">
+      <div><h1>Reports</h1><div className="sub">Monthly summary, trends and exports</div></div>
+      <div style={{ display: 'flex', gap: 10 }}>
+        <input type="month" required value={month} onChange={e => { if (e.target.value) setMonth(e.target.value); }} />
+        <button className="btn ghost" disabled={!summary} onClick={() => api.download('/reports/export/excel', { month }, `report-${month}.xlsx`)}>Export Excel</button>
+        <button className="btn ghost" disabled={!summary} onClick={handleExportPdf}>Export PDF</button>
+      </div>
+    </div>
+  );
+
+  if (error) return <>{head}<div className="alert-error">{error}</div></>;
+  if (!summary) return <>{head}<Loader text="Loading reports" /></>;
+
   return (
     <>
-      <div className="page-head">
-        <div><h1>Reports</h1><div className="sub">Monthly summary, trends and exports</div></div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <input type="month" value={month} onChange={e => setMonth(e.target.value)} />
-          <button className="btn ghost" onClick={() => api.download('/reports/export/excel', { month }, `report-${month}.xlsx`)}>Export Excel</button>
-          <button className="btn ghost" onClick={handleExportPdf}>Export PDF</button>
-        </div>
-      </div>
+      {head}
 
       <div className="grid cols-4" style={{ marginBottom: 14 }}>
         <div className="card stat"><div className="label">Supplier spending</div><div className="value"><Money value={summary.spendTotal} /></div></div>

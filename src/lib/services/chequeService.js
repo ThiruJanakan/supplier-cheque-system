@@ -6,9 +6,9 @@ import { sendChequeAlert } from './smsService';
 
 const TRANSITIONS = {
   issued:         ['pending', 'partially_paid', 'cleared', 'bounced', 'cancelled'],
-  pending:        ['partially_paid', 'cleared', 'bounced', 'cancelled'],
-  partially_paid: ['pending', 'cleared', 'bounced', 'cancelled'],
-  cleared:        [],                    // terminal
+  pending:        ['issued', 'partially_paid', 'cleared', 'bounced', 'cancelled'],
+  partially_paid: ['issued', 'pending', 'cleared', 'bounced', 'cancelled'],
+  cleared:        [],                    // terminal (funds already withdrawn)
   bounced:        ['pending'],           // can be re-presented
   cancelled:      [],                    // terminal
 };
@@ -97,7 +97,7 @@ async function applyAllocations(supabase, chequeId, cheque, allocations) {
   }
 }
 
-export async function listCheques(supabase, { status, supplierId, search, dueFrom, dueTo } = {}) {
+export async function listCheques(supabase, { status, supplierId, search, dueFrom, dueTo, issueFrom, issueTo } = {}) {
   let query = supabase
     .from('cheques')
     .select(`
@@ -119,6 +119,12 @@ export async function listCheques(supabase, { status, supplierId, search, dueFro
   }
   if (dueTo) {
     query = query.lte('due_date', dueTo);
+  }
+  if (issueFrom) {
+    query = query.gte('issue_date', issueFrom);
+  }
+  if (issueTo) {
+    query = query.lte('issue_date', issueTo);
   }
   if (search) {
     query = query.or(`cheque_number.ilike.%${search}%,bank_name.ilike.%${search}%,suppliers.name.ilike.%${search}%`);

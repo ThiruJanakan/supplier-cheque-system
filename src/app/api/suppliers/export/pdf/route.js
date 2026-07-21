@@ -7,6 +7,8 @@ export async function GET(request) {
     const { user, supabase } = await getAuthUser(request)
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
+    const month = new URL(request.url).searchParams.get('month') || ''
+
     const pdfStream = new PassThrough()
     const chunks = []
 
@@ -16,7 +18,7 @@ export async function GET(request) {
       pdfStream.on('error', err => reject(err))
     })
 
-    exportSuppliersPdf(supabase, pdfStream).catch(err => pdfStream.emit('error', err))
+    exportSuppliersPdf(supabase, pdfStream, month).catch(err => pdfStream.emit('error', err))
 
     const pdfBuffer = await pdfPromise
 

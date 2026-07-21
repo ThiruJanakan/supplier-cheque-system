@@ -11,10 +11,11 @@ export default function Suppliers() {
   const { toast, confirm } = useUI();
   const [rows, setRows] = useState([]);
   const [search, setSearch] = useState('');
+  const [month, setMonth] = useState('');         // '' = all time, else YYYY-MM
   const [editing, setEditing] = useState(null);   // null | {id?, ...fields}
 
-  const load = () => api.get('/suppliers', { search }).then(setRows).catch(e => toast.error(e.message));
-  useEffect(() => { load(); }, [search]);
+  const load = () => api.get('/suppliers', { search, month }).then(setRows).catch(e => toast.error(e.message));
+  useEffect(() => { load(); }, [search, month]);
 
   const save = async () => {
     if (!editing.name || !editing.name.trim()) {
@@ -51,7 +52,7 @@ export default function Suppliers() {
   };
 
   const downloadPdf = async () => {
-    try { await api.download('/suppliers/export/pdf', {}, `suppliers_${new Date().toISOString().slice(0, 10)}.pdf`); }
+    try { await api.download('/suppliers/export/pdf', { month }, `suppliers_${month || new Date().toISOString().slice(0, 10)}.pdf`); }
     catch (e) { toast.error(e.message); }
   };
 
@@ -73,7 +74,7 @@ export default function Suppliers() {
   return (
     <>
       <div className="page-head">
-        <div><h1>Suppliers</h1><div className="sub">{rows.length} active suppliers</div></div>
+        <div><h1>Suppliers</h1><div className="sub">{rows.length} active suppliers{month ? ` · totals for ${month}` : ''}</div></div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn ghost" onClick={downloadPdf}>Download PDF</button>
           <button className="btn primary" onClick={() => setEditing({ ...blank })}>Add supplier</button>
@@ -81,6 +82,8 @@ export default function Suppliers() {
       </div>
       <div className="toolbar">
         <input placeholder="Search name, contact or phone…" value={search} onChange={e => setSearch(e.target.value)} />
+        <input type="month" title="Show purchase & cheque totals for a month" value={month} onChange={e => setMonth(e.target.value)} />
+        {month && <button className="btn ghost sm" onClick={() => setMonth('')}>All time</button>}
       </div>
       <div className="card table-wrap responsive-table">
         <table>

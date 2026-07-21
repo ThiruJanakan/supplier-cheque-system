@@ -15,7 +15,15 @@ function normalise(d) {
   };
 }
 
-export async function listSuppliers(supabase, { search = '', includeInactive = false } = {}) {
+// First and last day of a YYYY-MM month as YYYY-MM-DD strings.
+export function monthBounds(month) {
+  if (!/^\d{4}-\d{2}$/.test(month)) throw new Error('Month must be in YYYY-MM format.');
+  const [y, m] = month.split('-').map(Number);
+  const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  return { from: `${month}-01`, to: `${month}-${String(lastDay).padStart(2, '0')}` };
+}
+
+export async function listSuppliers(supabase, { search = '', includeInactive = false, month = '' } = {}) {
   let query = supabase
     .from('suppliers')
     .select(`
@@ -27,6 +35,14 @@ export async function listSuppliers(supabase, { search = '', includeInactive = f
 
   if (!includeInactive) {
     query = query.eq('is_active', true);
+  }
+
+  if (month) {
+    // Restrict the embedded purchase/cheque rows so the totals reflect only this month.
+    const { from, to } = monthBounds(month);
+    query = query
+      .gte('purchases.purchase_date', from).lte('purchases.purchase_date', to)
+      .gte('cheques.issue_date', from).lte('cheques.issue_date', to);
   }
 
   if (search) {

@@ -9,8 +9,9 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search') || ''
     const includeInactive = searchParams.get('include_inactive') === 'true' || searchParams.get('includeInactive') === 'true';
+    const month = searchParams.get('month') || ''
 
-    const suppliers = await listSuppliers(supabase, { search, includeInactive })
+    const suppliers = await listSuppliers(supabase, { search, includeInactive, month })
     return Response.json(suppliers)
   } catch (e) {
     return Response.json({ error: e.message }, { status: 500 })

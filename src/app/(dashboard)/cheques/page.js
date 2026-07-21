@@ -10,8 +10,8 @@ const blank = { cheque_number: '', supplier_id: '', amount: '', issue_date: toda
 const STATUSES = ['issued', 'pending', 'partially_paid', 'cleared', 'bounced', 'cancelled'];
 const NEXT = {
   issued: ['pending', 'partially_paid', 'cleared', 'bounced', 'cancelled'],
-  pending: ['partially_paid', 'cleared', 'bounced', 'cancelled'],
-  partially_paid: ['pending', 'cleared', 'bounced', 'cancelled'],
+  pending: ['issued', 'partially_paid', 'cleared', 'bounced', 'cancelled'],
+  partially_paid: ['issued', 'pending', 'cleared', 'bounced', 'cancelled'],
   cleared: [], bounced: ['pending'], cancelled: [],
 };
 
@@ -20,11 +20,26 @@ export default function Cheques() {
   const [rows, setRows] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [purchases, setPurchases] = useState([]);   // open purchases for the selected supplier
-  const [filters, setFilters] = useState({ search: '', status: '', supplier_id: '' });
+  const [filters, setFilters] = useState({ search: '', status: '', supplier_id: '', month: '', month_by: 'due' });
   const [editing, setEditing] = useState(null);
   const [initialAllocations, setInitialAllocations] = useState([]);
 
-  const load = () => api.get('/cheques', filters).then(setRows).catch(e => toast.error(e.message));
+  // First and last day of a YYYY-MM month, for the API's date-range params.
+  const monthRange = m => {
+    const [y, mo] = m.split('-').map(Number);
+    const last = new Date(Date.UTC(y, mo, 0)).getUTCDate();
+    return { from: `${m}-01`, to: `${m}-${String(last).padStart(2, '0')}` };
+  };
+
+  const load = () => {
+    const { month, month_by, ...params } = filters;
+    if (month) {
+      const { from, to } = monthRange(month);
+      if (month_by === 'issue') { params.issue_from = from; params.issue_to = to; }
+      else { params.due_from = from; params.due_to = to; }
+    }
+    return api.get('/cheques', params).then(setRows).catch(e => toast.error(e.message));
+  };
   useEffect(() => { load(); }, [filters]);
   useEffect(() => { api.get('/suppliers').then(setSuppliers); }, []);
 
@@ -128,6 +143,16 @@ export default function Cheques() {
           <option value="">All suppliers</option>
           {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
+        <input type="month" title="Filter by month" value={filters.month} onChange={e => setFilters({ ...filters, month: e.target.value })} />
+        {filters.month && (
+          <>
+            <select value={filters.month_by} onChange={e => setFilters({ ...filters, month_by: e.target.value })}>
+              <option value="due">Due in month</option>
+              <option value="issue">Issued in month</option>
+            </select>
+            <button className="btn ghost sm" onClick={() => setFilters({ ...filters, month: '' })}>All time</button>
+          </>
+        )}
       </div>
       <div className="card table-wrap responsive-table">
         <table>

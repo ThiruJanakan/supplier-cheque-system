@@ -9,8 +9,15 @@ export default function Revenue() {
   const [entries, setEntries] = useState([]);
   const [account, setAccount] = useState(null);
   const [form, setForm] = useState({ entry_date: today(), amount: '', notes: '' });
+  const [exportMonth, setExportMonth] = useState(today().slice(0, 7));
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+
+  const downloadExcel = async () => {
+    setError('');
+    try { await api.download('/revenue/export/excel', { month: exportMonth }, `sales_revenue_${exportMonth}.xlsx`); }
+    catch (e) { setError(e.message); }
+  };
 
   const load = () => Promise.all([api.get('/revenue'), api.get('/savings/account')])
     .then(([r, a]) => { setEntries(r); setAccount(a); }).catch(e => setError(e.message));
@@ -35,6 +42,11 @@ export default function Revenue() {
     <>
       <div className="page-head">
         <div><h1>Sales & savings</h1><div className="sub">Daily revenue entries auto-deposit into the savings account</div></div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <input type="month" required title="Report month" value={exportMonth}
+            onChange={e => { if (e.target.value) setExportMonth(e.target.value); }} />
+          <button className="btn ghost" onClick={downloadExcel}>Export Excel</button>
+        </div>
       </div>
       {error && <div className="alert-error">{error}</div>}
       {notice && <div className="alert-ok">{notice}</div>}

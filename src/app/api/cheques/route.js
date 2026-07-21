@@ -12,8 +12,10 @@ export async function GET(request) {
     const search = searchParams.get('search') || undefined
     const dueFrom = searchParams.get('due_from') || undefined
     const dueTo = searchParams.get('due_to') || undefined
+    const issueFrom = searchParams.get('issue_from') || undefined
+    const issueTo = searchParams.get('issue_to') || undefined
 
-    const cheques = await listCheques(supabase, { status, supplierId, search, dueFrom, dueTo })
+    const cheques = await listCheques(supabase, { status, supplierId, search, dueFrom, dueTo, issueFrom, issueTo })
     return Response.json(cheques)
   } catch (e) {
     return Response.json({ error: e.message }, { status: 500 })
